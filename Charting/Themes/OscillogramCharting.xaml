@@ -7,77 +7,86 @@
         <Setter Property="SpeedShow" Value="True" />
         <Setter Property="PressureShow" Value="True" />
         <Setter Property="GradientShow" Value="True" />
+        <Setter Property="RealSpeedShow" Value="True" />
+        <Setter Property="LastTimeIndex" Value="59" />
+        <Setter Property="CurrentTimeIndex" Value="0" />
+        <Setter Property="GradientNum" Value="1280" />
+        <Setter Property="SpeedNum" Value="1280" />
         <Setter Property="Margin" Value="0,5,0,0" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:OscillogramCharting}">
-                    <Border Margin="{TemplateBinding Margin}"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
-                        <Border.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform />
-                                <SkewTransform />
-                                <RotateTransform />
-                                <TranslateTransform />
-                            </TransformGroup>
-                        </Border.RenderTransform>
-                        <Grid Name="Part_MarinG">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Name="gradient" Width="auto" />
-                                <ColumnDefinition Name="realGradient" Width="auto" />
-                                <ColumnDefinition Width="auto" />
-                                <ColumnDefinition Name="speed" Width="auto" />
-                                <ColumnDefinition Name="preasure" Width="auto" />
-                                <ColumnDefinition Width="auto" />
-                                <ColumnDefinition Name="graph" Width="auto" />
-                            </Grid.ColumnDefinitions>
-                            <ToggleButton Name="Part_Gradient" Grid.Column="1" Margin="5,0,0,0"
-                                          Content="Gra"
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="auto" />
+                        </Grid.ColumnDefinitions>
+                        <!--#region ColorShowSource-->
+                        <ItemsControl ItemsSource="{TemplateBinding ColorShowSource}" Visibility="Collapsed">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Rectangle Width="10" Height="10" Margin="5,0"
+                                               Fill="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <!--#endregion-->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+
+                            <ToggleButton Name="Part_Gradient" Margin="5,0,0,0" Content="Gra"
                                           IsChecked="{TemplateBinding GradientShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="Purple" />
-                                    <SolidColorBrush x:Key="Color" Color="Purple" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#B060B0" />
+                                    <SolidColorBrush x:Key="Color" Color="#B060B0" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <ToggleButton Name="Part_RealGradient" Grid.Column="2" Margin="5,0,0,0"
-                                          Content="RealGra"
+                            <ToggleButton Name="Part_RealGradient" Margin="5,0,0,0" Content="RealGra"
                                           IsChecked="{TemplateBinding RealGradientShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="Red" />
-                                    <SolidColorBrush x:Key="Color" Color="Red" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#FF0000" />
+                                    <SolidColorBrush x:Key="Color" Color="#FF0000" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <Border Grid.Column="3" Margin="4,8" HorizontalAlignment="Center"
-                                    BorderBrush="Gray" BorderThickness="1" />
-                            <ToggleButton Name="Part_Speed" Grid.Column="4" Margin="5,0,0,0"
-                                          Content="Speed"
+                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
+                                    BorderThickness="1" />
+                            <ToggleButton Name="Part_Speed" Margin="5,0,0,0" Content="Speed"
                                           IsChecked="{TemplateBinding SpeedShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="DarkGreen" />
-                                    <SolidColorBrush x:Key="Color" Color="DarkGreen" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#FFAA25" />
+                                    <SolidColorBrush x:Key="Color" Color="#FFAA25" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <ToggleButton Name="Part_Pressure" Grid.Column="5" Margin="5,0,0,0"
-                                          Content="Pressure"
+                            <ToggleButton Name="Part_RealSpeed" Margin="5,0,0,0" Content="RealSpeed"
+                                          IsChecked="{TemplateBinding RealSpeedShow}">
+                                <ToggleButton.Resources>
+                                    <SolidColorBrush x:Key="TextColor" Color="#006400" />
+                                    <SolidColorBrush x:Key="Color" Color="#006400" />
+                                </ToggleButton.Resources>
+                            </ToggleButton>
+                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
+                                    BorderThickness="1" />
+                            <ToggleButton Name="Part_Pressure" Margin="5,0,0,0" Content="Pressure"
                                           IsChecked="{TemplateBinding PressureShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="Blue" />
-                                    <SolidColorBrush x:Key="Color" Color="Blue" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#0076F6" />
+                                    <SolidColorBrush x:Key="Color" Color="#0076F6" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <Border Grid.Column="6" Margin="4,8" HorizontalAlignment="Center"
-                                    BorderBrush="Gray" BorderThickness="1" />
+                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
+                                    BorderThickness="1" />
                             <ListView Name="Part_Graph" Grid.Column="7" MaxWidth="500"
                                       Margin="0,0,40,0" Background="Transparent" BorderThickness="0"
                                       ItemsSource="{TemplateBinding Waves}"
-                                      ScrollViewer.HorizontalScrollBarVisibility="Auto" SelectionMode="Multiple">
+                                      ScrollViewer.HorizontalScrollBarVisibility="Auto" SelectedItem="" SelectionMode="Multiple">
                                 <ListView.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal" />
@@ -89,6 +98,7 @@
                                         <Setter Property="Background" Value="Transparent" />
                                         <Setter Property="Padding" Value="2,0" />
                                         <Setter Property="Margin" Value="2,0" />
+                                        <Setter Property="TextElement.Foreground" Value="{Binding Color}" />
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="ListViewItem">
@@ -136,15 +146,16 @@
                                 </ListView.ItemContainerStyle>
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Background="Transparent" Text="{Binding Wave}" />
+                                        <TextBlock Background="Transparent" Text="{Binding Decription}" />
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                             </ListView>
-                            <Image x:Name="Part_PlotImage" Grid.Row="1" Grid.ColumnSpan="8">
-
-                            </Image>
+                        </StackPanel>
+                        <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                            <local:OscillogramChartingCore x:Name="Part_OscillogramChartingCore" />
                         </Grid>
-                    </Border>
+
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

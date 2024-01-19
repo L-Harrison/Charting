@@ -4,22 +4,29 @@ using Microsoft.Win32;
 
 using ScottPlot;
 using ScottPlot.Control;
+using ScottPlot.Drawing;
 using ScottPlot.Plottable;
 using ScottPlot.Renderable;
+using ScottPlot.SnapLogic;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -29,85 +36,462 @@ using Image = System.Windows.Controls.Image;
 
 namespace Charting
 {
-    [TemplatePart(Name = GradientName, Type = typeof(ToggleButton))]
-    [TemplatePart(Name = RealGradientName, Type = typeof(ToggleButton))]
-    [TemplatePart(Name = SpeedName, Type = typeof(ToggleButton))]
-    [TemplatePart(Name = PressureName, Type = typeof(ToggleButton))]
-    [TemplatePart(Name = GraphName, Type = typeof(ItemsControl))]
-    [TemplatePart(Name = PlotImageName, Type = typeof(Image))]
-    [TemplatePart(Name = MarinGName, Type = typeof(Grid))]
-    [TemplatePart(Name = GraphContainerGName, Type = typeof(ContentControl))]
+    [TemplatePart(Name = OscillogramChartingCoreName, Type = typeof(OscillogramChartingCore))]
     public class OscillogramCharting : UserControl, IDisposable
     {
-        private readonly ControlBackEnd Backend;
-        private readonly Dictionary<Cursor, System.Windows.Input.Cursor> Cursors;
+        public const string OscillogramChartingCoreName = "Part_OscillogramChartingCore";
+        /// <summary>
+        /// 总点数  单副图最大点数 
+        /// 超过点数将不在刷新新增图
+        /// </summary>
+        public const int AllNumConst = 86400;
+
 
         private System.Windows.Threading.DispatcherTimer _updateDataTimer;
+        private System.Windows.Threading.DispatcherTimer _updateGradientDataTimer;
+        private System.Windows.Threading.DispatcherTimer _updateRealGradientDataTimer;
+        private System.Windows.Threading.DispatcherTimer _updateSpeedDataTimer;
+        private System.Windows.Threading.DispatcherTimer _updateRealSpeedDataTimer;
+        private System.Windows.Threading.DispatcherTimer _updatePressureDataTimer;
         private System.Windows.Threading.DispatcherTimer _renderTimer;
-        private WriteableBitmap PlotBitmap;
-        private float ScaledWidth => (float)(ActualWidth * Configuration.DpiStretchRatio);
-        private float ScaledHeight => (float)(ActualHeight * Configuration.DpiStretchRatio);
 
-        public const string GradientName = "Part_Gradient";
-        public const string RealGradientName = "Part_RealGradient";
-        public const string SpeedName = "Part_Speed";
-        public const string PressureName = "Part_Pressure";
-        public const string GraphName = "Part_Graph";
-        public const string PlotImageName = "Part_PlotImage";
-        public const string MarinGName = "Part_MarinG";
-        public const string GraphContainerGName = "Part_GraphContainer";
+        private OscillogramChartingCore Oscill;
+
+        #region dp
+        #region base data
+
+        /// <summary>
+        /// 当前时间索引位
+        /// </summary>
+        public int CurrentTimeIndex
+        {
+            get { return (int)GetValue(CurrentTimeIndexProperty); }
+            set { SetValue(CurrentTimeIndexProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for CurrentTimeIndex.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CurrentTimeIndexProperty =
+            DependencyProperty.Register("CurrentTimeIndex", typeof(int), typeof(OscillogramCharting), new PropertyMetadata(0));
 
 
         /// <summary>
-        /// This is the plot displayed by the user control. After modifying it you may need to call Render() to request the plot be redrawn on the screen.
+        /// 最后时间索引位
         /// </summary>
-        public Plot Plot => Backend.Plot;
+        public int LastTimeIndex
+        {
+            get { return (int)GetValue(LastTimeIndexProperty); }
+            set { SetValue(LastTimeIndexProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for LastTimeIndex.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty LastTimeIndexProperty =
+            DependencyProperty.Register("LastTimeIndex", typeof(int), typeof(OscillogramCharting), new PropertyMetadata(59, OnLastTimeIndexChanged));
+
+        private static void OnLastTimeIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((OscillogramCharting)d).Initilize();
+            //((OscillogramCharting)d).ResetSpectrum();
+        }
+
 
         /// <summary>
-        /// This object can be used to modify advanced behaior and customization of this user control.
+        /// 梯度点数
         /// </summary>
-        public readonly Configuration Configuration;
+        public int GradientNum
+        {
+            get { return (int)GetValue(GradientNumProperty); }
+            set { SetValue(GradientNumProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for GradientNum.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty GradientNumProperty =
+            DependencyProperty.Register("GradientNum", typeof(int), typeof(OscillogramCharting), new PropertyMetadata(1280));
+
 
         /// <summary>
-        /// This event is invoked any time the axis limits are modified.
+        /// 速度点数
         /// </summary>
-        public event EventHandler AxesChanged;
+        public int SpeedNum
+        {
+            get { return (int)GetValue(SpeedNumProperty); }
+            set { SetValue(SpeedNumProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedNum.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SpeedNumProperty =
+            DependencyProperty.Register("SpeedNum", typeof(int), typeof(OscillogramCharting), new PropertyMetadata(1280));
+
+
+       
+        #endregion
+        #region 
+        public List<string> ColorShowSource
+        {
+            get { return (List<string>)GetValue(ColorShowSourceProperty); }
+            set { SetValue(ColorShowSourceProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for ColorShowSource.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty ColorShowSourceProperty =
+            DependencyProperty.Register("ColorShowSource", typeof(List<string>), typeof(OscillogramCharting), new PropertyMetadata(new List<string>()));
+        public bool RealGradientShow
+        {
+            get { return (bool)GetValue(RealGradientShowProperty); }
+            set { SetValue(RealGradientShowProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for RealGradientShow.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty RealGradientShowProperty =
+            DependencyProperty.Register("RealGradientShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnRealGradientShowChanged));
+        private static void OnRealGradientShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is OscillogramCharting charting && charting.scatterRealGradient != null)
+            {
+                charting.scatterRealGradient.IsVisible = (bool)e.NewValue;
+            }
+        }
+        public bool GradientShow
+        {
+            get { return (bool)GetValue(GradientShowProperty); }
+            set { SetValue(GradientShowProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for GradientShow.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty GradientShowProperty =
+            DependencyProperty.Register("GradientShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnGradientShowChanged));
+        private static void OnGradientShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is OscillogramCharting charting && charting.scatterGradient != null)
+            {
+                charting.scatterGradient.IsVisible = (bool)e.NewValue;
+            }
+        }
+        public bool SpeedShow
+        {
+            get { return (bool)GetValue(SpeedShowProperty); }
+            set { SetValue(SpeedShowProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for SpeedShow.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SpeedShowProperty =
+            DependencyProperty.Register("SpeedShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnSpeedShowChanged));
+        private static void OnSpeedShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is OscillogramCharting charting && charting.scatterSpeed != null)
+            {
+                charting.scatterSpeed.IsVisible = (bool)e.NewValue;
+            }
+        }
+        public bool RealSpeedShow
+        {
+            get { return (bool)GetValue(RealSpeedShowProperty); }
+            set { SetValue(RealSpeedShowProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for RealSpeedShow.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty RealSpeedShowProperty =
+            DependencyProperty.Register("RealSpeedShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnRealSpeedShowChanged));
+        private static void OnRealSpeedShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is OscillogramCharting charting && charting.scatterRealSpeed != null)
+            {
+                charting.scatterRealSpeed.IsVisible = (bool)e.NewValue;
+            }
+        }
+        public bool PressureShow
+        {
+            get { return (bool)GetValue(PressureShowProperty); }
+            set { SetValue(PressureShowProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for PressureShow.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty PressureShowProperty =
+            DependencyProperty.Register("PressureShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnPressureShowChanged));
+        private static void OnPressureShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is OscillogramCharting charting && charting.scatterPressure != null)
+            {
+                charting.scatterPressure.IsVisible = (bool)e.NewValue;
+            }
+        }
+        public ObservableCollection<OscillogramWave> Waves
+        {
+            get { return (ObservableCollection<OscillogramWave>)GetValue(WavesProperty); }
+            set { SetValue(WavesProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for Waves.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty WavesProperty =
+            DependencyProperty.Register("Waves", typeof(ObservableCollection<OscillogramWave>), typeof(OscillogramCharting), new PropertyMetadata(new ObservableCollection<OscillogramWave>()));
+        #endregion
+        #endregion
+
+        #region update data
+
+
+        #region gradient
+        public double[] GradientX
+        {
+            get { return (double[])GetValue(GradientXProperty); }
+            set { SetValue(GradientXProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for GradientX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty GradientXProperty =
+            DependencyProperty.Register("GradientX", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnGradientChanged));
+
+        public double[] GradientY
+        {
+            get { return (double[])GetValue(GradientYProperty); }
+            set { SetValue(GradientYProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for GradientY.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty GradientYProperty =
+            DependencyProperty.Register("GradientY", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnGradientChanged));
+        private static void OnGradientChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((OscillogramCharting)d).ResetGradient();
+        }
+        #endregion
+
+
+        #region speed
+
+        public double[] SpeedX
+        {
+            get { return (double[])GetValue(SpeedXProperty); }
+            set { SetValue(SpeedXProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SpeedXProperty =
+            DependencyProperty.Register("SpeedX", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnSpeedChanged));
+
+        public double[] SpeedY
+        {
+            get { return (double[])GetValue(SpeedYProperty); }
+            set { SetValue(SpeedYProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedY.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SpeedYProperty =
+            DependencyProperty.Register("SpeedY", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnSpeedChanged));
+
+        private static void OnSpeedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((OscillogramCharting)d).ResetSpeed();
+        }
+        #endregion
+
+
+        #region speed real
+
+        public double[] SpeedRealX
+        {
+            get { return (double[])GetValue(SpeedRealXProperty); }
+            set { SetValue(SpeedRealXProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedRealX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SpeedRealXProperty =
+            DependencyProperty.Register("SpeedRealX", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], (d, e) =>
+            {
+                //if (e.NewValue is double[] ex)
+                //{
+                //    if (ex.Length < OscillogramCharting.AllNumConst/*((OscillogramCharting)d).LastTimeIndex*/)
+                //    {
+                //        var db = new double[OscillogramCharting.AllNumConst];
+                //        Array.Copy(ex, db, ex.Length);
+
+                //        //((OscillogramCharting)d).SpeedRealX.setn
+                //        ((OscillogramCharting)d).SpeedRealX = db;
+                //    }
+                //}
+                ((OscillogramCharting)d).ResetRealSpeed();
+            }));
+
+        public double[] SpeedRealY
+        {
+            get { return (double[])GetValue(SpeedRealYProperty); }
+            set { SetValue(SpeedRealYProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedRealX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SpeedRealYProperty =
+            DependencyProperty.Register("SpeedRealY", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], (d, e) =>
+            {
+                //if (e.NewValue is double[] ex)
+                //{
+                //    if (ex.Length < OscillogramCharting.AllNumConst/*((OscillogramCharting)d).LastTimeIndex*/)
+                //    {
+                //        var db = new double[OscillogramCharting.AllNumConst];
+                //        Array.Copy(ex, db, ex.Length);
+
+                //        ((OscillogramCharting)d).SpeedRealY = db;
+                //    }
+                //}
+                 ((OscillogramCharting)d).ResetRealSpeed();
+            }));
+
+        private static void OnSpeedRealChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+
+            //if (e.NewValue is double[] ex)
+            //{
+            //    if (ex.Length < ((OscillogramCharting)d).LastTimeIndex)
+            //    {
+            //        var db = new double[OscillogramCharting.AllNumConst];
+            //        Array.Copy(ex, db, ex.Length); 
+            //        var Types = d.GetType();//获得类型  
+            //        foreach (var item in Types.GetProperties())
+            //        {
+            //            if (item.Name == e.Property.Name)
+            //            {
+            //                item.SetValue(d, db);
+            //            }
+            //        }
+            //    }
+            //}
+            ((OscillogramCharting)d).ResetRealSpeed();
+        }
+        #endregion
+
+        #region gradient real
+        public double[] GradientRealX
+        {
+            get { return (double[])GetValue(GradientRealXProperty); }
+            set { SetValue(GradientRealXProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedRealX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty GradientRealXProperty =
+            DependencyProperty.Register("GradientRealX", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnGradientRealChanged));
+
+        public double[] GradientRealY
+        {
+            get { return (double[])GetValue(GradientRealYProperty); }
+            set { SetValue(GradientRealYProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedRealX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty GradientRealYProperty =
+            DependencyProperty.Register("GradientRealY", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnGradientRealChanged));
+
+        private static void OnGradientRealChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            //if (e.NewValue is double[] ex)
+            //{
+            //    if (ex.Length < ((OscillogramCharting)d).LastTimeIndex)
+            //    {
+            //        var db = new double[OscillogramCharting.AllNumConst];
+            //        Array.Copy(ex, db, ex.Length);
+            //        var Types = d.GetType();//获得类型  
+            //        foreach (var item in Types.GetProperties())
+            //        {
+            //            if (item.Name == e.Property.Name)
+            //            {
+            //                item.SetValue(d, db);
+            //            }
+            //        }
+            //    }
+            //}
+            ((OscillogramCharting)d).ResetRealGradient();
+        }
+        #endregion
+
+        #region pressure real
+        public double[] PressureX
+        {
+            get { return (double[])GetValue(PressureXProperty); }
+            set { SetValue(PressureXProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedRealX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty PressureXProperty =
+            DependencyProperty.Register("PressureX", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnPressureChanged));
+
+        public double[] PressureY
+        {
+            get { return (double[])GetValue(PressureYProperty); }
+            set { SetValue(PressureYProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SpeedRealX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty PressureYProperty =
+            DependencyProperty.Register("PressureY", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnPressureChanged));
+
+        private static void OnPressureChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is double[] ex)
+            {
+                //if (ex.Length < ((OscillogramCharting)d).LastTimeIndex)
+                //{
+                //    var db = new double[OscillogramCharting.AllNumConst];
+                //    Array.Copy(ex, db, ex.Length);
+                //    var Types = d.GetType();//获得类型  
+                //    foreach (var item in Types.GetProperties())
+                //    {
+                //        if (item.Name == e.Property.Name)
+                //        {
+                //            item.SetValue(d, db);
+                //        }
+                //    }
+                //}
+            }
+            ((OscillogramCharting)d).ResetPressure();
+        }
+        #endregion
+
+
+        private ConcurrentDictionary<OscillogramWave, double[]> X;
+        private ConcurrentDictionary<OscillogramWave, double[]> Y;
+        #endregion
+
+        #region Axis
+        /// <summary>
+        /// wave axis
+        /// </summary>
+        private Axis xAxis = new Axis(0, new Edge());
+        /// <summary>
+        /// wave axis
+        /// </summary>
+        private Axis yAixs = new Axis(0, new Edge());
+        /// <summary>
+        /// gradient axis
+        /// </summary>
+        private Axis yAixsGradient = new Axis(1, new Edge());
+        /// <summary>
+        /// speed axis
+        /// </summary>
+        private Axis yAixsSpeed = new Axis(2, new Edge());
+        /// <summary>
+        /// pressure axis
+        /// </summary>
+        private Axis yAixsPressure = new Axis(3, new Edge());
+        #endregion
+
+        #region IPlottable
+        /// <summary>
+        /// wave ScatterPlot
+        /// key wave
+        /// </summary>
+        private ConcurrentDictionary<OscillogramWave, IPlottable> scatterSpectrum = new();
+        /// <summary>
+        /// gradient ScatterPlot
+        /// </summary>
+        private IPlottable? scatterGradient = null;
+        /// <summary>
+        /// realGradient ScatterPlot
+        /// </summary>
+        private IPlottable? scatterRealGradient = null;
 
         /// <summary>
-        /// This event is invoked any time the plot is right-clicked.
-        /// By default it contains DefaultRightClickEvent(), but you can remove this and add your own method.
+        /// speed ScatterPlot
         /// </summary>
-        public event EventHandler RightClicked;
+        private IPlottable? scatterSpeed = null;
+        /// <summary>
+        /// realSpeed = ScatterPlot
+        /// </summary>
+        private IPlottable? scatterRealSpeed = null;
 
         /// <summary>
-        /// This event is invoked any time the plot is left-clicked.
-        /// It is typically used to interact with custom plot types.
+        /// pressure = ScatterPlot
         /// </summary>
-        public event EventHandler LeftClicked;
-
-        /// <summary>
-        /// This event is invoked when a <seealso cref="Plottable.IHittable"/> plottable is left-clicked.
-        /// </summary>
-        public event EventHandler LeftClickedPlottable;
-
-        /// <summary>
-        /// This event is invoked after the mouse moves while dragging a draggable plottable.
-        /// The object passed is the plottable being dragged.
-        /// </summary>
-        public event EventHandler PlottableDragged;
-
-        [Obsolete("use 'PlottableDragged' instead", error: true)]
-        public event EventHandler MouseDragPlottable;
-
-        /// <summary>
-        /// This event is invoked right after a draggable plottable was dropped.
-        /// The object passed is the plottable that was just dropped.
-        /// </summary>
-        public event EventHandler PlottableDropped;
-
-
-
-
+        private IPlottable? scatterPressure = null;
+        #endregion
 
         static OscillogramCharting()
         {
@@ -116,618 +500,523 @@ namespace Charting
 
         public OscillogramCharting()
         {
-            Backend = new ControlBackEnd(1, 1, GetType().Name);
-            Backend.Resize((float)ActualWidth, (float)ActualHeight, useDelayedRendering: false);
-            Backend.BitmapChanged += new EventHandler((sender, e) => ReplacePlotBitmap(Backend.GetLatestBitmap()));
-            Backend.BitmapUpdated += new EventHandler((sender, e) => UpdatePlotBitmap(Backend.GetLatestBitmap()));
-            Backend.CursorChanged += new EventHandler((sender, e) => Cursor = Cursors[Backend.Cursor]);
-            Backend.RightClicked += new EventHandler((sender, e) => RightClicked?.Invoke(this, e));
-            Backend.LeftClicked += new EventHandler((sender, e) => LeftClicked?.Invoke(this, e));
-            Backend.LeftClickedPlottable += new EventHandler((sender, e) => LeftClickedPlottable?.Invoke(this, e));
-            Backend.AxesChanged += new EventHandler((sender, e) => AxesChanged?.Invoke(this, e));
-            Backend.PlottableDragged += new EventHandler((sender, e) => PlottableDragged?.Invoke(sender, e));
-            Backend.PlottableDropped += new EventHandler((sender, e) => PlottableDropped?.Invoke(sender, e));
-            Backend.Configuration.ScaleChanged += new EventHandler((sender, e) => Backend.Resize(ScaledWidth, ScaledHeight, useDelayedRendering: true));
-            Configuration = Backend.Configuration;
-            //Backend.Plot.Layout(left: -100, right: -100, bottom: -100, top: -50);
-            Backend.Plot.Layout(0, 0, 0, 0, 0);
+
+            X = new ConcurrentDictionary<OscillogramWave, double[]>();
+            Y = new ConcurrentDictionary<OscillogramWave, double[]>();
+
 
             _updateDataTimer = new DispatcherTimer();
-            _updateDataTimer.Interval = TimeSpan.FromMilliseconds(1);
+            _updateDataTimer.Interval = TimeSpan.FromMilliseconds(1); ;
             _updateDataTimer.Tick += UpdateData;
             _updateDataTimer.Start();
+
+            _updateGradientDataTimer = new DispatcherTimer();
+            _updateGradientDataTimer.Interval = TimeSpan.FromMilliseconds(1);
+            _updateGradientDataTimer.Tick += UpdateGradinetData;
+            _updateGradientDataTimer.Start();
+
+            _updateRealGradientDataTimer = new DispatcherTimer();
+            _updateRealGradientDataTimer.Interval = TimeSpan.FromMilliseconds(1);
+            _updateRealGradientDataTimer.Tick += UpdateRealGradientData;
+            _updateRealGradientDataTimer.Start();
+
+            _updateSpeedDataTimer = new DispatcherTimer();
+            _updateSpeedDataTimer.Interval = TimeSpan.FromMilliseconds(1);
+            _updateSpeedDataTimer.Tick += UpdateSpeedData;
+            _updateSpeedDataTimer.Start();
+
+            _updateRealSpeedDataTimer = new DispatcherTimer();
+            _updateRealSpeedDataTimer.Interval = TimeSpan.FromMilliseconds(1);
+            _updateRealSpeedDataTimer.Tick += UpdateRealSpeedData;
+            _updateRealSpeedDataTimer.Start();
+
+            _updatePressureDataTimer = new DispatcherTimer();
+            _updatePressureDataTimer.Interval = TimeSpan.FromMilliseconds(1);
+            _updatePressureDataTimer.Tick += UpdatePressureData;
+            _updatePressureDataTimer.Start();
 
             // create a timer to update the GUI
             _renderTimer = new DispatcherTimer();
             _renderTimer.Interval = TimeSpan.FromMilliseconds(20);
-            _renderTimer.Tick += Render;
+            _renderTimer.Tick += (sender, e) => Oscill?.AutoRender();
             _renderTimer.Start();
 
+        }
 
-            if (DesignerProperties.GetIsInDesignMode(this))
+        #region virtual
+
+        public virtual void GradientEvent(ToggleButton toggleButton)
+        {
+            toggleButton.Checked += (sender, e) =>
             {
-                try
-                {
-                    Configuration.WarnIfRenderNotCalledManually = false;
-                    Plot.Title($"ScottPlot {Plot.Version}");
-                    Plot.Render();
-                }
-                catch (Exception e)
-                {
-                    //InitializeComponent();
-                    PlotImage.Visibility = System.Windows.Visibility.Hidden;
-                    //ErrorLabel.Text = "ERROR: ScottPlot failed to render in design mode.\n\n" +
-                    //    "This may be due to incompatible System.Drawing.Common versions or a 32-bit/64-bit mismatch.\n\n" +
-                    //    "Although rendering failed at design time, it may still function normally at runtime.\n\n" +
-                    //    $"Exception details:\n{e}";
-                    return;
-                }
-            }
-            Cursors = new Dictionary<Cursor, System.Windows.Input.Cursor>()
-            {
-                [ScottPlot.Cursor.Arrow] = System.Windows.Input.Cursors.Arrow,
-                [ScottPlot.Cursor.WE] = System.Windows.Input.Cursors.SizeWE,
-                [ScottPlot.Cursor.NS] = System.Windows.Input.Cursors.SizeNS,
-                [ScottPlot.Cursor.All] = System.Windows.Input.Cursors.SizeAll,
-                [ScottPlot.Cursor.Crosshair] = System.Windows.Input.Cursors.Cross,
-                [ScottPlot.Cursor.Hand] = System.Windows.Input.Cursors.Hand,
-                [ScottPlot.Cursor.Question] = System.Windows.Input.Cursors.Help,
+                if (!GradientShow)
+                    GradientShow = true;
             };
-
-            RightClicked += DefaultRightClickEvent;
-            //InitializeComponent();
-            //ErrorLabel.Visibility = System.Windows.Visibility.Hidden;
-            Backend.StartProcessingEvents();
-
-
-            ResetBase();
-        }
-
-        private void Render(object? sender, EventArgs e)
-        {
-            //if (AutoAxisCheckbox.IsChecked == true)
-            //    wpfPlot1.Plot.AxisAuto();
-            Backend.Plot.AxisAuto();
-            Backend.WasManuallyRendered = true;
-            Backend.Plot.Render(false);
-        }
-
-        private void UpdateData(object? sender, EventArgs e)
-        {
-
-        }
-
-        /// <summary>
-        /// Return the mouse position on the plot (in coordinate space) for the latest X and Y coordinates
-        /// </summary>
-        public (double x, double y) GetMouseCoordinates(int xAxisIndex = 0, int yAxisIndex = 0) => Backend.GetMouseCoordinates(xAxisIndex, yAxisIndex);
-
-        /// <summary>
-        /// Return the mouse position (in pixel space) for the last observed mouse position
-        /// </summary>
-        public (float x, float y) GetMousePixel() => Backend.GetMousePixel();
-
-        /// <summary>
-        /// Reset this control by replacing the current plot with a new empty plot
-        /// </summary>
-        public void Reset() => Backend.Reset((float)ActualWidth, (float)ActualHeight);
-
-        /// <summary>
-        /// Reset this control by replacing the current plot with an existing plot
-        /// </summary>
-        public void Reset(Plot newPlot) => Backend.Reset((float)ActualWidth, (float)ActualHeight, newPlot);
-
-        /// <summary>
-        /// Re-render the plot and update the image displayed by this control.
-        /// </summary>
-        /// <param name="lowQuality">disable anti-aliasing to produce faster (but lower quality) plots</param>
-        public void Refresh(bool lowQuality = false)
-        {
-            Backend.WasManuallyRendered = true;
-            Backend.Render(lowQuality);
-        }
-
-        // TODO: mark this obsolete in ScottPlot 5.0 (favor Refresh)
-        /// <summary>
-        /// Re-render the plot and update the image displayed by this control.
-        /// </summary>
-        /// <param name="lowQuality">disable anti-aliasing to produce faster (but lower quality) plots</param>
-        public void Render(bool lowQuality = false) => Refresh(lowQuality);
-
-        /// <summary>
-        /// Request the control to refresh the next time it is available.
-        /// This method does not block the calling thread.
-        /// </summary>
-        public void RefreshRequest(RenderType renderType = RenderType.LowQualityThenHighQualityDelayed)
-        {
-            Backend.WasManuallyRendered = true;
-            Backend.RenderRequest(renderType);
-        }
-
-        // TODO: mark this obsolete in ScottPlot 5.0 (favor Refresh)
-        /// <summary>
-        /// Request the control to refresh the next time it is available.
-        /// This method does not block the calling thread.
-        /// </summary>
-        public void RenderRequest(RenderType renderType = RenderType.LowQualityThenHighQualityDelayed) => RefreshRequest(renderType);
-
-        /// <summary>
-        /// This object stores the bitmap that is displayed in the PlotImage.
-        /// When this control is created or resized this bitmap is replaced by a new one.
-        /// When new renders are requested (without resizing) they are drawn onto this existing bitmap.
-        /// </summary>
-
-        private InputState GetInputState(MouseEventArgs e, double? delta = null) =>
-           new()
-           {
-               X = (float)e.GetPosition(this).X * Configuration.DpiStretchRatio,
-               Y = (float)e.GetPosition(this).Y * Configuration.DpiStretchRatio,
-               LeftWasJustPressed = e.LeftButton == MouseButtonState.Pressed,
-               RightWasJustPressed = e.RightButton == MouseButtonState.Pressed,
-               MiddleWasJustPressed = e.MiddleButton == MouseButtonState.Pressed,
-               ShiftDown = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift),
-               CtrlDown = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl),
-               AltDown = Keyboard.IsKeyDown(Key.LeftAlt) || Keyboard.IsKeyDown(Key.RightAlt),
-               WheelScrolledUp = delta.HasValue && delta > 0,
-               WheelScrolledDown = delta.HasValue && delta < 0,
-           };
-        private static BitmapImage BmpImageFromBmp(System.Drawing.Bitmap bmp)
-        {
-            using var memory = new System.IO.MemoryStream();
-            bmp.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
-            memory.Position = 0;
-
-            var bitmapImage = new BitmapImage();
-            bitmapImage.BeginInit();
-            bitmapImage.StreamSource = memory;
-            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-            bitmapImage.EndInit();
-            bitmapImage.Freeze();
-
-            return bitmapImage;
-        }
-
-        /// <summary>
-        /// Replace the existing PlotBitmap with a new one.
-        /// </summary>
-        public void ReplacePlotBitmap(System.Drawing.Bitmap bmp)
-        {
-            PlotBitmap = new WriteableBitmap(BmpImageFromBmp(bmp));
-            PlotImage.Source = PlotBitmap;
-        }
-
-        /// <summary>
-        /// Update the PlotBitmap with pixel data from the latest render.
-        /// If a PlotBitmap does not exist one will be created.
-        /// </summary>
-        private void UpdatePlotBitmap(System.Drawing.Bitmap bmp)
-        {
-            if (PlotBitmap is null)
+            toggleButton.Unchecked += (sender, e) =>
             {
-                ReplacePlotBitmap(Backend.GetLatestBitmap());
-                return;
-            }
-
-            var rect1 = new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height);
-            var flags = System.Drawing.Imaging.ImageLockMode.ReadOnly;
-            System.Drawing.Imaging.BitmapData bmpData = bmp.LockBits(rect1, flags, bmp.PixelFormat);
-
-            try
-            {
-                var rect2 = new System.Windows.Int32Rect(0, 0, bmpData.Width, bmpData.Height);
-                PlotBitmap.WritePixels(
-                    sourceRect: rect2,
-                    buffer: bmpData.Scan0,
-                    bufferSize: bmpData.Stride * bmpData.Height,
-                    stride: bmpData.Stride);
-            }
-            finally
-            {
-                bmp.UnlockBits(bmpData);
-            }
-        }
-
-        /// <summary>
-        /// Launch the default right-click menu.
-        /// </summary>
-        public void DefaultRightClickEvent(object sender, EventArgs e)
-        {
-            var cm = new ContextMenu();
-
-            MenuItem SaveImageMenuItem = new() { Header = "Save Image" };
-            SaveImageMenuItem.Click += RightClickMenu_SaveImage_Click;
-            cm.Items.Add(SaveImageMenuItem);
-
-            MenuItem CopyImageMenuItem = new() { Header = "Copy Image" };
-            CopyImageMenuItem.Click += RightClickMenu_Copy_Click;
-            cm.Items.Add(CopyImageMenuItem);
-
-            MenuItem AutoAxisMenuItem = new() { Header = "Zoom to Fit Data" };
-            AutoAxisMenuItem.Click += RightClickMenu_AutoAxis_Click;
-            cm.Items.Add(AutoAxisMenuItem);
-
-            //MenuItem HelpMenuItem = new() { Header = "Help" };
-            //HelpMenuItem.Click += RightClickMenu_Help_Click;
-            //cm.Items.Add(HelpMenuItem);
-
-            //MenuItem OpenInNewWindowMenuItem = new() { Header = "Open in New Window" };
-            //OpenInNewWindowMenuItem.Click += RightClickMenu_OpenInNewWindow_Click;
-            //cm.Items.Add(OpenInNewWindowMenuItem);
-
-            cm.IsOpen = true;
-        }
-        private void RightClickMenu_Copy_Click(object sender, EventArgs e) => System.Windows.Clipboard.SetImage(BmpImageFromBmp(Plot.Render()));
-        //private void RightClickMenu_Help_Click(object sender, EventArgs e) => new WPF.HelpWindow().Show();
-        //private void RightClickMenu_OpenInNewWindow_Click(object sender, EventArgs e) => new WpfPlotViewer(Plot).Show();
-        private void RightClickMenu_AutoAxis_Click(object sender, EventArgs e) { Plot.AxisAuto(); Refresh(); }
-        private void RightClickMenu_SaveImage_Click(object sender, EventArgs e)
-        {
-            var sfd = new SaveFileDialog
-            {
-                FileName = "ScottPlot.png",
-                Filter = "PNG Files (*.png)|*.png;*.png" +
-                         "|JPG Files (*.jpg, *.jpeg)|*.jpg;*.jpeg" +
-                         "|BMP Files (*.bmp)|*.bmp;*.bmp" +
-                         "|All files (*.*)|*.*"
+                if (GradientShow)
+                    GradientShow = false;
             };
-
-            if (sfd.ShowDialog() is true)
-                Plot.SaveFig(sfd.FileName);
         }
+        public virtual void RealGradientEvent(ToggleButton toggleButton)
+        {
+            toggleButton.Checked += (sender, e) =>
+            {
+                if (!RealGradientShow)
+                    RealGradientShow = true;
+            };
+            toggleButton.Unchecked += (sender, e) =>
+            {
+                if (RealGradientShow)
+                    RealGradientShow = false;
+            };
+        }
+        public virtual void PressureEvent(ToggleButton toggleButton)
+        {
+            toggleButton.Checked += (sender, e) =>
+            {
+                if (!PressureShow)
+                    PressureShow = true;
+            };
+            toggleButton.Unchecked += (sender, e) =>
+            {
+                if (PressureShow)
+                    PressureShow = false;
+            };
+        }
+
+        public virtual void SpeedEvent(ToggleButton toggleButton)
+        {
+            toggleButton.Checked += (sender, e) =>
+            {
+                if (!SpeedShow)
+                    SpeedShow = true;
+            };
+            toggleButton.Unchecked += (sender, e) =>
+            {
+                if (SpeedShow)
+                    SpeedShow = false;
+            };
+        }
+
+        public virtual void RealSpeedEvent(ToggleButton toggleButton)
+        {
+            toggleButton.Checked += (sender, e) =>
+            {
+                if (!RealSpeedShow)
+                    RealSpeedShow = true;
+            };
+            toggleButton.Unchecked += (sender, e) =>
+            {
+                if (RealSpeedShow)
+                    RealSpeedShow = false;
+            };
+        }
+
+        public virtual void GraphEvent(ListView itemsControl)
+        {
+            itemsControl.PreviewMouseWheel += (sender, e) =>
+            {
+                var ic = sender as ItemsControl;
+                if (ic == null) return;
+                var data = e.GetPosition(this);
+                var count = e.Delta > 0 ? 2 : -2;
+                var scroll = Oscill.FindVisualChildren<ScrollViewer>(ic).FirstOrDefault();
+                if (scroll != null)
+                {
+                    var toHorizontalOffset = (scroll.ExtentWidth / ic.Items.Count) * count + scroll.HorizontalOffset;
+                    scroll.ScrollToHorizontalOffset(toHorizontalOffset);
+                }
+            };
+            itemsControl.SelectionChanged += (sender, e) =>
+            {
+                if (e is SelectionChangedEventArgs arg)
+                {
+                    foreach (var item in arg.AddedItems)
+                    {
+                        if (item is OscillogramWave wave)
+                        {
+                            scatterSpectrum[wave].IsVisible = wave.IsSelected;
+                        }
+                    }
+                    foreach (var item in arg.RemovedItems)
+                    {
+                        if (item is OscillogramWave wave)
+                        {
+                            scatterSpectrum[wave].IsVisible = wave.IsSelected;
+                        }
+                    }
+                }
+            };
+        }
+        #endregion
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            if (GetTemplateChild(GradientName) is ToggleButton toggleButton)
+            if (GetTemplateChild(OscillogramChartingCoreName) is OscillogramChartingCore oscillogramChartingCore)
             {
-                toggleButton.Checked += (sender, e) =>
-                {
-                    if (!GradientShow)
-                        GradientShow = true;
-                };
-                toggleButton.Unchecked += (sender, e) =>
-                {
-                    if (GradientShow)
-                        GradientShow = false;
-                };
+                this.Oscill = oscillogramChartingCore;
+                Initilize();
             }
-            if (GetTemplateChild(RealGradientName) is ToggleButton toggleButton1)
+            if (GetTemplateChild(OscillogramChartingCore.GradientName) is ToggleButton toggleButton)
+                GradientEvent(toggleButton);
+            if (GetTemplateChild(OscillogramChartingCore.RealGradientName) is ToggleButton toggleButton1)
+                RealGradientEvent(toggleButton1);
+            if (GetTemplateChild(OscillogramChartingCore.PressureName) is ToggleButton toggleButton3)
             {
-                toggleButton1.Checked += (sender, e) =>
-                {
-                    if (!RealGradientShow)
-                        RealGradientShow = true;
-                };
-                toggleButton1.Unchecked += (sender, e) =>
-                {
-                    if (RealGradientShow)
-                        RealGradientShow = false;
-                };
+                PressureEvent(toggleButton3);
             }
-            if (GetTemplateChild(PressureName) is ToggleButton toggleButton3)
+            if (GetTemplateChild(OscillogramChartingCore.SpeedName) is ToggleButton toggleButton4)
             {
-                toggleButton3.Checked += (sender, e) =>
-                {
-                    if (!PressureShow)
-                        PressureShow = true;
-                };
-                toggleButton3.Unchecked += (sender, e) =>
-                {
-                    if (PressureShow)
-                        PressureShow = false;
-                };
+                SpeedEvent(toggleButton4);
             }
-            if (GetTemplateChild(SpeedName) is ToggleButton toggleButton4)
+            if (GetTemplateChild(OscillogramChartingCore.RealSpeedName) is ToggleButton toggleButton5)
             {
-                toggleButton4.Checked += (sender, e) =>
-                {
-                    if (!SpeedShow)
-                        SpeedShow = true;
-                };
-                toggleButton4.Unchecked += (sender, e) =>
-                {
-                    if (SpeedShow)
-                        SpeedShow = false;
-                };
+                RealSpeedEvent(toggleButton5);
             }
-            if (GetTemplateChild(GraphName) is ItemsControl itemsControl)
+            if (GetTemplateChild(OscillogramChartingCore.GraphName) is ListView itemsControl)
             {
-                itemsControl.PreviewMouseWheel += (sender, e) =>
-                {
-                    var ic = sender as ItemsControl;
-                    if (ic == null) return;
-                    var data = e.GetPosition(this);
-                    var count = e.Delta > 0 ? 2 : -2;
-                    var scroll = FindVisualChildren<ScrollViewer>(ic).FirstOrDefault();
-                    if (scroll != null)
-                    {
-                        var toHorizontalOffset = (scroll.ExtentWidth / ic.Items.Count) * count + scroll.HorizontalOffset;
-                        scroll.ScrollToHorizontalOffset(toHorizontalOffset);
-                    }
-                };
+                GraphEvent(itemsControl);
             }
-            if (GetTemplateChild(PlotImageName) is Image contentControl)
+
+        }
+        private void Initilize()
+        {
+            ColorShowSource = Oscill.ColorHtmls;
+
+            InitilizePlot();
+
+
+            ResetSpectrum(new double[] { 254, 255, 269, 259, 255, 254, 254, 255, 255, 255, 255, 255 });
+            ResetSpeed();
+            ResetRealSpeed();
+            ResetPressure();
+            ResetGradient();
+            ResetRealGradient();
+        }
+
+        private void InitilizePlot()
+        {
+            Oscill.Reset();
+            Oscill.Crosshair = Oscill.Plot.AddCrosshair(0, 0);
+            Oscill.Plot.XLabel("TimeSpan (min)");
+            Oscill.Plot.XAxis.TickLabelFormat(_ => (Math.Round(_ / 60, 1)).ToString());
+            Oscill.Plot.YAxis.IsVisible = true;
+
+            xAxis = Oscill.Plot.XAxis;
+            yAixs = Oscill.Plot.YAxis;
+            yAixs.Label("Spectrum");
+            yAixs.LabelStyle(fontSize: 13, rotation: 0);
+            yAixs.Color(ColorTranslator.FromHtml("#252526"));
+            yAixs.IsVisible = true;
+            //yAixs.SetZoomOutLimit(3000);
+            //yAixs.SetZoomInLimit(0);
+
+            yAixsGradient = Oscill.Plot.AddAxis(ScottPlot.Renderable.Edge.Left);
+            yAixsGradient.Label("Mobile Phase");
+            yAixsGradient.LabelStyle(fontSize: 13, rotation: 0);
+            yAixsGradient.Color(ColorTranslator.FromHtml("#B060B0"));
+            yAixsGradient.IsVisible = true;
+            //yAixsGradient.SetSizeLimit(min: 0, max: 110);
+
+            yAixsSpeed = Oscill.Plot.AddAxis(ScottPlot.Renderable.Edge.Right);
+            yAixsSpeed.Label("Speed");
+            yAixsSpeed.LabelStyle(fontSize: 13, rotation: 0);
+            yAixsSpeed.Color(ColorTranslator.FromHtml("#006400"));
+            yAixsSpeed.IsVisible = true;
+            //yAixsSpeed.SetSizeLimit(min: 0, max: 200);
+
+            yAixsPressure = Oscill.Plot.AddAxis(ScottPlot.Renderable.Edge.Right);
+            yAixsPressure.Label("Pressure");
+            yAixsPressure.LabelStyle(fontSize: 13, rotation: 0);
+            yAixsPressure.Color(ColorTranslator.FromHtml("#94D5F9"));
+            yAixsPressure.IsVisible = true;
+            //yAixsPressure.SetSizeLimit(min: 0, max: 50);
+            //yAixsPressure.SetZoomOutLimit(50);
+            //yAixsPressure.SetZoomInLimit(0);
+
+            Oscill.Crosshair.VerticalLine.PositionFormatter = _ => $"{_:f1} s";
+            Oscill.Crosshair.LineColor = System.Drawing.Color.Green;
+
+            #region ResetBaseGraph
+            var x = new double[180];
+            var y = new double[180];
+            for (int i = 0; i < 180; i++)
+                x[i] = i;
+            y[0] = 3000;
+            y[59] = -1000;
+            //spectrum
+            var scatterFlag = Oscill.Plot.AddScatter(x, y, label: null, color: System.Drawing.Color.Transparent);
+            scatterFlag.YAxisIndex = yAixs.AxisIndex;
+            //speed
+            var scatterSpeedFlag = Oscill.Plot.AddScatter(new double[] { 0, 1 }, new double[] { 0, 200 }, label: null, color: System.Drawing.Color.Transparent);
+            scatterSpeedFlag.YAxisIndex = yAixsSpeed.AxisIndex;
+            //pressure
+            var scatterPressureFlag = Oscill.Plot.AddScatter(new double[] { 0, 1 }, new double[] { 0, 200 }, label: null, color: System.Drawing.Color.Transparent);
+            scatterPressureFlag.YAxisIndex = yAixsPressure.AxisIndex;
+            //gradient
+            var scatterGradientFlag1 = Oscill.Plot.AddScatter(new double[] { 0, 1 }, new double[] { 100, 0 }, label: null, color: System.Drawing.Color.Transparent);
+            scatterGradientFlag1.YAxisIndex = yAixsGradient.AxisIndex;
+            #endregion
+        }
+
+
+        #region reset lines
+        /// <summary>
+        /// 谱图线
+        /// </summary>
+        private void ResetSpectrum(params double[] waves)
+        {
+            Waves.Clear();
+            X.Clear();
+            Y.Clear();
+            var waveIndex = 0;
+            foreach (var wave in waves)
             {
-                PlotImage = contentControl;
-                contentControl.MouseDown += (sender, e) =>
-                {
-                    var ex = e;
-                    Debug.WriteLine("MouseDown");
-                    //CaptureMouse(); 
-                    Backend.MouseDown(GetInputState(e));
-                };
-                contentControl.MouseMove += (sender, e) =>
-                {
-                    var ex = e;
-                    Debug.WriteLine("MouseMove");
-                    Backend.MouseMove(GetInputState(e));
-                    base.OnMouseMove(e);
-                };
-                contentControl.MouseUp += (sender, e) =>
-                {
-                    Debug.WriteLine("MouseUp");
-                    Backend.MouseUp(GetInputState(e));
-                    ReleaseMouseCapture();
-                };
-                contentControl.MouseWheel += (sender, e) =>
-                {
-                    Debug.WriteLine("MouseWheel");
-                    Backend.MouseWheel(GetInputState(e, e.Delta));
-                };
-                //contentControl.MouseDoubleClick += (sender, e) =>
-                //{
-                //    Debug.WriteLine("MouseDoubleClick");
-                //    Backend.DoubleClick();
-                //};
-                contentControl.MouseEnter += (sender, e) =>
-                {
-                    Debug.WriteLine("MouseEnter");
-                    base.OnMouseEnter(e);
-                };
-                contentControl.MouseLeave += (sender, e) =>
-                {
-                    Debug.WriteLine("MouseLeave");
-                    base.OnMouseLeave(e);
-                };
-
+                var dscib = $"{wave}";
+                var count = X.Keys.Count(_ => _.Wave == wave);
+                if (count > 0)
+                    dscib = $"{wave}({count})";
+                var key = new OscillogramWave(wave) { Color = Oscill.ColorHtmls[waveIndex], Decription = dscib, IsSelected = false };
+                Waves.Add(key);
+                X.TryAdd(key, new double[AllNumConst]);
+                Y.TryAdd(key, new double[AllNumConst]);
+                waveIndex++;
             }
-            if (GetTemplateChild(MarinGName) is Grid grid)
+
+            foreach (var currentWave in X.Keys)
             {
-                grid.SizeChanged += (sender, e) => Backend.Resize(ScaledWidth, ScaledHeight, useDelayedRendering: true);
+                if (scatterSpectrum.Keys.Any(_ => _ == currentWave) && scatterSpectrum[currentWave] != null)
+                    Oscill.Plot.Remove(scatterSpectrum[currentWave]);
+                var scatter = Oscill.Plot.AddScatter(X[currentWave], Y[currentWave]);
+                scatter.YAxisIndex = yAixs.AxisIndex;
+                scatter.MaxRenderIndex = LastTimeIndex;
+                scatter.MarkerShape = MarkerShape.none;
+                //scatter.IsHighlighted = false;
+                scatter.Color = ColorTranslator.FromHtml(currentWave.Color!);// ColorHelper.WaveColors[i++ % 28];// System.Drawing.Color.Green;
+                scatter.IsVisible = currentWave.IsSelected/* && WaveSource.FirstOrDefault(_ => _.Wave == item.Wave).IsSelected*/;
+                scatter.Label = currentWave.Decription;
+                scatterSpectrum[currentWave] = scatter;
             }
         }
-
-
-
-        public bool RealGradientShow
+        /// <summary>
+        /// 速度线
+        /// </summary>
+        private void ResetSpeed()
         {
-            get { return (bool)GetValue(RealGradientShowProperty); }
-            set { SetValue(RealGradientShowProperty, value); }
-        }
 
-        // Using a DependencyProperty as the backing store for RealGradientShow.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty RealGradientShowProperty =
-            DependencyProperty.Register("RealGradientShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnRealGradientShowChanged));
+            if (scatterSpeed != null)
+                Oscill.Plot.Remove(scatterSpeed);
+            if (SpeedX.Count() != SpeedY.Count())
+                return;
 
-        private static void OnRealGradientShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is OscillogramCharting charting)
+            var scatter = new ScatterPlotLimitDraggable(SpeedX, SpeedY)
             {
-                charting.Waves.Add(new OscillogramWave(254) { Color = "#FC1944", IsSelected = true });
-                charting.Waves.Add(new OscillogramWave(300) { Color = "#00612D", IsSelected = true });
-                charting.Waves.Add(new OscillogramWave(9001) { Color = "#0965EA", IsSelected = true });
-                charting.Waves.Add(new OscillogramWave(9002) { Color = "#00FF00", IsSelected = true });
-                charting.Waves.Add(new OscillogramWave(9003) { Color = "#FF1122", IsSelected = true });
-                charting.Waves.Add(new OscillogramWave(9004) { Color = "#CCCC00", IsSelected = true });
+                DragCursor = ScottPlot.Cursor.Hand,
+                DragEnabled = true,
+                Label = $"Speed",
+                Color = ColorTranslator.FromHtml("#FFAA25"),
+                LineWidth = 1,
+                YAxisIndex = yAixsSpeed.AxisIndex,
+                MaxRenderIndex = SpeedX.Length - 1,
+                //IsHighlighted = false,
+                //scatter.MarkerShape = MarkerShape.none;
+                IsVisible = yAixsSpeed.IsVisible && SpeedShow,
 
+            };
+            scatter.Dragged += (sender, e) =>
+            {
+                var x = e;
+            };
+            // use a custom function to limit the movement of points
+            static Coordinate MoveBetweenAdjacent(List<double> xs, List<double> ys, int index, Coordinate requested)
+            {
+                int leftIndex = Math.Max(index - 1, 0);
+                int rightIndex = Math.Min(index + 1, xs.Count - 1);
+
+                double newX = requested.X;
+                if (xs[leftIndex] > xs[rightIndex])
+                {
+
+                }
+                //newX = Math.Max(newX, xs[leftIndex]);
+                //newX = Math.Min(newX, xs[rightIndex]);
+
+                return new Coordinate(newX, requested.Y);
             }
-            //d.SetValue(WavesProperty, e.)
-            //Waves.Add(120);
-            //Waves.Add(254);
-            //Waves.Add(460);
+            scatter.MovePointFunc = MoveBetweenAdjacent;
+            Oscill.Plot.Add(scatter);
+            scatterSpeed = scatter;
         }
-
-        public bool GradientShow
+        /// <summary>
+        /// 实时速度线
+        /// </summary>
+        private void ResetRealSpeed()
         {
-            get { return (bool)GetValue(GradientShowProperty); }
-            set { SetValue(GradientShowProperty, value); }
+            if (scatterRealSpeed != null)
+                Oscill.Plot.Remove(scatterRealSpeed);
+            if (SpeedRealX.Count() != SpeedRealY.Count())
+                return;
+            var scatterReal = Oscill.Plot.AddScatter(SpeedRealX, SpeedRealY, label: null, color: ColorTranslator.FromHtml("#006400"), lineWidth: 1);
+            scatterReal.YAxisIndex = yAixsSpeed.AxisIndex;
+            scatterReal.MaxRenderIndex = SpeedRealX.Length - 1;
+            scatterReal.MarkerShape = MarkerShape.none;
+            //scatterReal.IsHighlighted = false;
+            scatterReal.IsVisible = yAixsSpeed.IsVisible && RealSpeedShow;
+            scatterRealSpeed = scatterReal;
         }
-
-        // Using a DependencyProperty as the backing store for GradientShow.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty GradientShowProperty =
-            DependencyProperty.Register("GradientShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnGradientShowChanged));
-        private static void OnGradientShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        /// <summary>
+        /// 压力线
+        /// </summary>
+        private void ResetPressure()
         {
+            if (this.scatterPressure != null)
+                Oscill.Plot.Remove(this.scatterPressure);
+            if (PressureX.Count() != PressureY.Count())
+                return;
+            var scatterPressure = Oscill.Plot.AddScatter(PressureX, PressureY, label: $"Pressure", color: ColorTranslator.FromHtml("#0076F6"), lineWidth: 1);
+            scatterPressure.YAxisIndex = yAixsPressure.AxisIndex;
+            scatterPressure.MaxRenderIndex = PressureX.Length - 1;
+            scatterPressure.MarkerShape = MarkerShape.none;
+            //scatterPressure.IsHighlighted = false;
+            scatterPressure.IsVisible = yAixsPressure.IsVisible && PressureShow;
+            this.scatterPressure = scatterPressure;
         }
-
-
-        public bool SpeedShow
+        /// <summary>
+        /// 梯度线
+        /// </summary>
+        private void ResetGradient()
         {
-            get { return (bool)GetValue(SpeedShowProperty); }
-            set { SetValue(SpeedShowProperty, value); }
+            if (this.scatterGradient != null)
+                Oscill.Plot.Remove(this.scatterGradient);
+            if (GradientX.Count() != GradientY.Count())
+                return;
+            var scatter = new ScatterPlotLimitDraggable(GradientX, GradientY)
+            {
+                DragCursor = ScottPlot.Cursor.Hand,
+                DragEnabled = true,
+                DragEnabledX = true,
+                DragEnabledY = true,
+                Label = $"mobilephase",
+                Color = ColorTranslator.FromHtml("#B060B0"),
+                LineWidth = 1,
+                YAxisIndex = yAixsGradient.AxisIndex,
+                XAxisIndex = xAxis.AxisIndex,
+                MaxRenderIndex = GradientX.Length - 1,
+                //IsHighlighted = true,
+                IsVisible = yAixsGradient.IsVisible && GradientShow,
+
+            };
+
+            scatter.Dragged += (sender, e) =>
+            {
+                if (sender is ScottPlot.Plottable.ScatterPlotDraggable ps)
+                {
+                    var xs = ps.Xs;
+                    var ys = ps.Ys;
+                    var index = ps.CurrentIndex;
+
+                    int leftIndex = Math.Max(index - 1, 0);
+                    int rightIndex = Math.Min(index + 1, xs.Count() - 1);
+                }
+
+            };
+            scatter.MovePointFunc = MoveBetweenAdjacent;
+            scatterGradient = scatter;
+            Oscill.Plot.Add(scatterGradient);
+
+            // use a custom function to limit the movement of points
+            static Coordinate MoveBetweenAdjacent(List<double> xs, List<double> ys, int index, Coordinate requested)
+            {
+                int leftIndex = Math.Max(index - 1, 0);
+                int rightIndex = Math.Min(index + 1, xs.Count - 1);
+
+                double newX = requested.X;
+                //newX = Math.Max(newX, xs[leftIndex]);
+                //newX = Math.Min(newX, xs[rightIndex]);
+
+                return new Coordinate(newX, requested.Y);
+            }
+
         }
-
-        // Using a DependencyProperty as the backing store for SpeedShow.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty SpeedShowProperty =
-            DependencyProperty.Register("SpeedShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnSpeedShowChanged));
-
-        private static void OnSpeedShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        /// <summary>
+        /// 实时梯度线
+        /// </summary>
+        private void ResetRealGradient()
         {
+            if (this.scatterRealGradient != null)
+                Oscill.Plot.Remove(this.scatterRealGradient);
+            if (GradientRealX.Count() != GradientRealY.Count())
+                return;
+            var scatterReal = Oscill.Plot.AddScatter(GradientRealX, GradientRealY, label: null, color: ColorTranslator.FromHtml("#FF0000"), lineWidth: 1);
+            scatterReal.YAxisIndex = yAixsGradient.AxisIndex;
+            scatterReal.MaxRenderIndex = GradientRealX.Length - 1;
+            scatterReal.MarkerShape = MarkerShape.none;
+            //scatterReal.IsHighlighted = false;
+            scatterReal.IsVisible = yAixsGradient.IsVisible && RealGradientShow;
+            scatterRealGradient = scatterReal;
         }
+        #endregion
 
-
-        public bool PressureShow
+        #region update data
+        private void UpdateData(object? sender, EventArgs e)
         {
-            get { return (bool)GetValue(PressureShowProperty); }
-            set { SetValue(PressureShowProperty, value); }
+            if (CurrentTimeIndex >= AllNumConst || CurrentTimeIndex > LastTimeIndex)
+                return;
+            foreach (var key in X.Keys)
+            {
+                X[key][CurrentTimeIndex] = CurrentTimeIndex;
+                Y[key][CurrentTimeIndex] = CurrentTimeIndex * 100;
+                (scatterSpectrum[key] as ScatterPlot)!.MaxRenderIndex = CurrentTimeIndex;
+            }
+
+
         }
-
-        // Using a DependencyProperty as the backing store for PressureShow.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty PressureShowProperty =
-            DependencyProperty.Register("PressureShow", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, OnPressureShowChanged));
-
-        private static void OnPressureShowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private void UpdatePressureData(object? sender, EventArgs e)
         {
+            if (CurrentTimeIndex >= AllNumConst || CurrentTimeIndex > LastTimeIndex)
+                return;
+            PressureX[CurrentTimeIndex] = CurrentTimeIndex;
+            PressureY[CurrentTimeIndex] = CurrentTimeIndex + 25;
+            if (scatterPressure != null)
+                (scatterPressure as ScatterPlot)!.MaxRenderIndex = CurrentTimeIndex;
         }
-
-        public ObservableCollection<OscillogramWave> Waves
+        private void UpdateGradinetData(object? sender, EventArgs e)
         {
-            get { return (ObservableCollection<OscillogramWave>)GetValue(WavesProperty); }
-            set { SetValue(WavesProperty, value); }
+
         }
 
-        // Using a DependencyProperty as the backing store for Waves.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty WavesProperty =
-            DependencyProperty.Register("Waves", typeof(ObservableCollection<OscillogramWave>), typeof(OscillogramCharting), new PropertyMetadata(new ObservableCollection<OscillogramWave>(), OnOscillogramWaveChanged));
-
-        private static void OnOscillogramWaveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private void UpdateRealGradientData(object? sender, EventArgs e)
         {
+            if (CurrentTimeIndex >= AllNumConst || CurrentTimeIndex > LastTimeIndex)
+                return;
+            GradientRealX[CurrentTimeIndex] = CurrentTimeIndex;
+            GradientRealY[CurrentTimeIndex] = CurrentTimeIndex + 20;
+            if (scatterRealGradient != null)
+                (scatterRealGradient as ScatterPlot)!.MaxRenderIndex = CurrentTimeIndex;
         }
+
+        private void UpdateSpeedData(object? sender, EventArgs e)
+        {
+
+        }
+
+        private void UpdateRealSpeedData(object? sender, EventArgs e)
+        {
+            if (CurrentTimeIndex >= AllNumConst || CurrentTimeIndex > LastTimeIndex)
+                return;
+            SpeedRealX[CurrentTimeIndex] = CurrentTimeIndex;
+            SpeedRealY[CurrentTimeIndex] = CurrentTimeIndex + 8;
+            if (scatterRealSpeed != null)
+                (scatterRealSpeed as ScatterPlot)!.MaxRenderIndex = CurrentTimeIndex;
+        }
+        #endregion
 
         public void Dispose()
         {
             throw new NotImplementedException();
         }
 
-        public System.Windows.Controls.Image PlotImage
-        {
-            get { return (System.Windows.Controls.Image)GetValue(PlotImageProperty); }
-            set { SetValue(PlotImageProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for PlotImage.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty PlotImageProperty =
-            DependencyProperty.Register("PlotImage", typeof(System.Windows.Controls.Image), typeof(OscillogramCharting), new PropertyMetadata(default(System.Windows.Controls.Image)));
-
-
-
-        public Crosshair Crosshair
-        {
-            get { return (Crosshair)GetValue(CrosshairProperty); }
-            set { SetValue(CrosshairProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for Crosshair.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty CrosshairProperty =
-            DependencyProperty.Register("Crosshair", typeof(Crosshair), typeof(OscillogramCharting), new PropertyMetadata(new Crosshair()));
-
-
-
-        #region Axis
-        /// <summary>
-        /// wave axis
-        /// </summary>
-        private Axis xAxis = new Axis(0,new Edge());
-        private Axis yAixs = new Axis(0, new Edge());
-        /// <summary>
-        /// gradient axis
-        /// </summary>
-        private Axis yAixsGradient = new Axis(1, new Edge());
-        private Axis yAixsSpeed = new Axis(2, new Edge());
-        private Axis yAixsPressure = new Axis(3, new Edge());
-        #endregion
-
-
-        private void ResetBase()
-        {
-            Backend.Reset((float)ActualWidth, (float)ActualHeight);
-            Crosshair = Backend.Plot.AddCrosshair(0, 0);
-            Backend.Plot.XLabel("TimeSpan (min)");
-            Backend.Plot.XAxis.TickLabelFormat(_ => (Math.Round(_ / 60, 1)).ToString());
-            Backend.Plot.YAxis.IsVisible = true;
-
-            xAxis = Backend.Plot.XAxis;
-            yAixs = Backend.Plot.YAxis;
-            yAixs.Label("Spectrum");
-            yAixs.LabelStyle(fontSize: 13, rotation: 0);
-            yAixs.Color(System.Drawing.Color.Green);
-            yAixs.IsVisible = true;
-
-            yAixsGradient = Backend.Plot.AddAxis(ScottPlot.Renderable.Edge.Left);
-            yAixsGradient.Label("MobilePhase");
-            yAixsGradient.LabelStyle(fontSize: 13, rotation: 0);
-            yAixsGradient.Color(System.Drawing.Color.Red);
-            yAixsGradient.IsVisible = true;
-            yAixsGradient.SetSizeLimit(min: 0, max: 110);
-
-            yAixsSpeed = Backend.Plot.AddAxis(ScottPlot.Renderable.Edge.Right);
-            yAixsSpeed.Label("Speed");
-            yAixsSpeed.LabelStyle(fontSize: 13, rotation: 0);
-            yAixsSpeed.Color(System.Drawing.Color.FromArgb(37, 37, 38));
-            yAixsSpeed.IsVisible = true;
-            yAixsSpeed.SetSizeLimit(min: 0, max: 200);
-
-            yAixsPressure = Backend.Plot.AddAxis(ScottPlot.Renderable.Edge.Right);
-            yAixsPressure.Label("Pressure");
-            yAixsPressure.LabelStyle(fontSize: 13, rotation: 0);
-            yAixsPressure.Color( System.Drawing.Color.FromArgb(35, 170, 242));
-            yAixsPressure.IsVisible = true;
-            yAixsPressure.SetSizeLimit(min: 0, max: 9999);
-
-            Crosshair.XAxisIndex = Backend.Plot.XAxis.AxisIndex;
-            Crosshair.YAxisIndex = Backend.Plot.YAxis.AxisIndex;
-            Crosshair.VerticalLine.PositionFormatter = _ => $"{_:f1} s";
-            Crosshair.LineColor = System.Drawing.Color.Green;
-        }
-
-        private double[] gradientX = new double[1280];
-        private double[] gradientY = new double[1280];
-        private double[] gradientRealX = new double[3600_00];
-        private double[] gradientRealY = new double[3600_00];
-        private void ResetGradient()
-        {
-          
-
-    
-
-         
-
-
-            //var scatterFlag = chart.Plot.AddScatter(new double[] { 0 }, new double[] { 1000 }, label: null, color: System.Drawing.Color.Transparent);
-            //scatterFlag.YAxisIndex = yAixs.AxisIndex;
-            //var scatterFlag1 = chart.Plot.AddScatter(new double[] { 0 }, new double[] { 100 }, label: null, color: System.Drawing.Color.Transparent);
-            //scatterFlag1.YAxisIndex = yAixsGradient.AxisIndex;
-            //chart.Plot.AxisAutoY(yAxisIndex: yAixs.AxisIndex, margin: 0.5);
-            //chart.Plot.AxisAutoY(yAxisIndex: yAixsGradient.AxisIndex, margin: 0.1);
-            //chart.Plot.AxisAutoX();
-            //chart.Refresh(isHightQuality);
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="X"></param>
-        /// <param name="Y"></param>
-        private void AddGradientPoint(double X, double Y)
-        {
-
-        }
-
-
-        #region private
-        private IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
-        {
-            if (depObj == null)
-            {
-                yield break;
-            }
-
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
-            {
-                DependencyObject child = VisualTreeHelper.GetChild(depObj, i);
-                T val = child as T;
-                if (val != null)
-                {
-                    yield return val;
-                }
-
-                foreach (T item in FindVisualChildren<T>(child))
-                {
-                    yield return item;
-                }
-            }
-        }
-        #endregion
-
-
-
     }
+
 }

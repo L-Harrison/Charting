@@ -7,11 +7,27 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         Title="MainWindow"
         Width="800"
+        Height="450"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
-        Height="450"
         mc:Ignorable="d">
     <Grid>
-        <charting:OscillogramCharting />
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <!--<RowDefinition/>-->
+        </Grid.RowDefinitions>
+        <charting:OscillogramCharting CurrentTimeIndex="{Binding CurrentTime}"
+                                      GradientRealX="{Binding GradientRealX, Mode=TwoWay}"
+                                      GradientRealY="{Binding GradientRealY, Mode=TwoWay}"
+                                      GradientX="{Binding GradientX, Mode=TwoWay}"
+                                      GradientY="{Binding GradientY, Mode=TwoWay}"
+                                      LastTimeIndex="{Binding LastTime, Mode=TwoWay}"
+                                      PressureX="{Binding PressureX, Mode=TwoWay}"
+                                      PressureY="{Binding PressureY, Mode=TwoWay}"
+                                      SpeedRealX="{Binding SpeedRealX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SpeedRealY="{Binding SpeedRealY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      SpeedX="{Binding SpeedX, Mode=TwoWay}"
+                                      SpeedY="{Binding SpeedY, Mode=TwoWay}" />
+        <!--<charting:OscillogramChartingCore Grid.Row="1" />-->
     </Grid>
 </Window>
