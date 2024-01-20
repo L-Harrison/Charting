@@ -66,7 +66,7 @@ namespace Charting
 
 
         //53种颜色
-        internal List<string> ColorHtmls = new List<string>() {
+        public static List<string> ColorHtmls = new List<string>() {
             "#000000",
             "#e6194B",
             "#3cb44b",
@@ -147,6 +147,21 @@ namespace Charting
         public static readonly DependencyProperty CrosshairProperty =
             DependencyProperty.Register("Crosshair", typeof(Crosshair), typeof(OscillogramChartingCore), new PropertyMetadata(new Crosshair()));
 
+
+
+        public Tooltip CurrentXYLabel
+        {
+            get { return (Tooltip)GetValue(CurrentXYLabelProperty); }
+            set { SetValue(CurrentXYLabelProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for CurrentXYLabel.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CurrentXYLabelProperty =
+            DependencyProperty.Register("CurrentXYLabel", typeof(Tooltip), typeof(OscillogramChartingCore), new PropertyMetadata(new Tooltip()));
+
+
+
+      
 
         #region Plot
         /// <summary>
@@ -269,7 +284,7 @@ namespace Charting
         #region Plot method
 
         /// <summary>
-        /// Return the mouse position on the plot (in coordinate space) for the latest X and Y coordinates
+        /// Return the mouse position on the plot (in coordinate space) for the latest Y and Y coordinates
         /// </summary>
         public (double x, double y) GetMouseCoordinates(int xAxisIndex = 0, int yAxisIndex = 0) => Backend.GetMouseCoordinates(xAxisIndex, yAxisIndex);
 
@@ -459,6 +474,37 @@ namespace Charting
         #endregion
 
 
+        private IDraggable GetDraggable(double xPixel, double yPixel, int snapDistancePixels = 5)
+        {
+            var settings = Plot.GetSettings();
+            IDraggable[] enabledDraggables = settings.Plottables
+                                  .Where(x => x is IDraggable)
+                                  .Select(x => (IDraggable)x)
+                                  //.Where(x => x.DragEnabled)
+                                  .Where(x => x is IPlottable p && p.IsVisible)
+                                  .ToArray();
+
+            foreach (IDraggable draggable in enabledDraggables)
+            {
+                int xAxisIndex = ((IPlottable)draggable).XAxisIndex;
+                int yAxisIndex = ((IPlottable)draggable).YAxisIndex;
+                double xUnitsPerPx = settings.GetXAxis(xAxisIndex).Dims.UnitsPerPx;
+                double yUnitsPerPx = settings.GetYAxis(yAxisIndex).Dims.UnitsPerPx;
+
+                double snapWidth = xUnitsPerPx * snapDistancePixels;
+                double snapHeight = yUnitsPerPx * snapDistancePixels;
+                //double xCoords = GetCoordinateX((float)xPixel, xAxisIndex);
+                //double yCoords = GetCoordinateY((float)yPixel, yAxisIndex);
+
+                double xCoords = settings.GetXAxis(xAxisIndex).Dims.GetUnit((float)xPixel);
+                double yCoords = settings.GetYAxis(yAxisIndex).Dims.GetUnit((float)yPixel);
+                if (draggable.IsUnderMouse(xCoords, yCoords, snapWidth, snapHeight))
+                    return draggable;
+            }
+
+            return null;
+        }
+
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
@@ -489,6 +535,45 @@ namespace Charting
             if (GetTemplateChild(PlotImageName) is Image contentControl)
             {
                 PlotImage = contentControl;
+                contentControl.MouseLeftButtonDown += (object sender, MouseButtonEventArgs e) =>
+                {
+                    Trace.WriteLine(e.ClickCount);
+                    if (e.ClickCount == 2)
+                    {
+                        var pixelX = e.MouseDevice.GetPosition(this).X;
+                        var pixelY = e.MouseDevice.GetPosition(this).Y;
+                        var ht = this.Plot.GetHittable(pixelX, pixelY);
+                        if (ht != null)
+                        {
+                            if (ht == CurrentXYLabel && ht.IsVisible)
+                            {
+                                MessageBox.Show("xx");
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            (double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
+
+                            var dr = GetDraggable(pixelX, pixelY, 30);
+                            if (dr != null && dr is ScatterPlot scatterPlot)
+                            {
+                                if (dr.DragEnabled)
+                                {
+                                    scatterPlot.MarkerShape = MarkerShape.none;
+                                    dr.DragEnabled = false;
+                                    CurrentXYLabel.IsVisible = false;
+                                }
+                                else
+                                {
+                                    scatterPlot.MarkerShape = MarkerShape.filledCircle;
+                                    dr.DragEnabled = true;
+                                    CurrentXYLabel.IsVisible = true;
+                                }
+                            }
+                        }
+                    }
+                };
                 contentControl.MouseDown += (sender, e) =>
                 {
                     //Mouse.Capture(contentControl);
@@ -506,9 +591,6 @@ namespace Charting
                     var pixelX = e.MouseDevice.GetPosition(this).X;
                     var pixelY = e.MouseDevice.GetPosition(this).Y;
 
-
-                    var ke = Plot.GetCoordinate((float)pixelX, (float)pixelY, 0, 0);
-
                     (double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
                     Crosshair.X = coordinateX;
                     Crosshair.Y = coordinateY;
@@ -523,58 +605,44 @@ namespace Charting
                             {
                                 var rt = Math.Abs(pointX - coordinateX) < Math.Abs(pointY - coordinateY) ? Math.Abs(pointX - coordinateX) : Math.Abs(pointY - coordinateY);
                                 list.Add((sp, pointX, pointY, pointIndex, rt));
-                                break;
                             }
                         }
                     }
-                    if (list.Any())
+
+                    var dr = Plot.GetDraggable(pixelX, pixelY, 30);
+                    if (dr != null && dr is ScatterPlot scatterPlot)
                     {
-                        var plt = list.OrderBy(_ => _.rx).First().plot;
-                        //plt.IsHighlighted = true;
-                        Crosshair.Color = plt.Color;
+                        //scatterPlot.MarkerShape = MarkerShape.filledDiamond;
+                        Crosshair.Color = scatterPlot.Color;
                     }
                     else
                     {
-                        var dr = Plot.GetDraggable(pixelX, pixelY, 20);
-                        if (dr != null)
+                        if (list.Any())
                         {
-                            if (dr is ScatterPlot scatterPlot)
-                            {
-                                //scatterPlot.IsHighlighted = true;
-                                Crosshair.Color = scatterPlot.Color;
-                            }
-                            else
-                            {
-                                Crosshair.Color = System.Drawing.Color.Green;
-                            }
+                            var plt = list.OrderBy(_ => _.rx).First().plot;
+                            //plt.IsHighlighted = true;
+                            Crosshair.Color = plt.Color;
+                            //plt.MarkerShape = MarkerShape.none;
                         }
                         else
                         {
                             Crosshair.Color = System.Drawing.Color.Green;
                         }
-                    }
-                    //var dr = Plot.GetDraggable(pixelX, pixelY, 20);
-                    //if (dr != null)
-                    //{
-                    //    if (dr is ScatterPlot scatterPlot)
-                    //        Crosshair.Color = scatterPlot.Color;
-                    //    else
-                    //        Crosshair.Color = System.Drawing.Color.Green;
-                    //}
-                    //else
-                    //    Crosshair.Color = System.Drawing.Color.Green;
 
+                    }
 
                     this.Refresh();
                 };
                 contentControl.MouseUp += (sender, e) =>
                 {
+                    //CurrentXYLabel.IsVisible = false;
                     Backend.MouseUp(GetInputState(e));
                     ReleaseMouseCapture();
                 };
                 contentControl.MouseWheel += (sender, e) =>
                 {
                     Backend.MouseWheel(GetInputState(e, e.Delta));
+                    AutoZoom = false;
                 };
                 //contentControl.MouseDoubleClick += (sender, e) =>
                 //{
@@ -601,6 +669,9 @@ namespace Charting
                 MarinGEvent(grid);
             }
         }
+
+
+
         public virtual void MarinGEvent(Grid grid)
         {
             grid.SizeChanged += (sender, e) =>
@@ -618,7 +689,7 @@ namespace Charting
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
             {
                 DependencyObject child = VisualTreeHelper.GetChild(depObj, i);
-                T val = child as T;
+                T val = (child as T)!;
                 if (val != null)
                 {
                     yield return val;
@@ -628,6 +699,34 @@ namespace Charting
                 {
                     yield return item;
                 }
+            }
+        }
+        internal void Tooltip_Dragged(object? sender, EventArgs e)
+        {
+
+            if (sender is ScatterPlotLimitDraggable ps)
+            {
+                var xs = ps.Xs;
+                var ys = ps.Ys;
+                var index = ps.CurrentIndex;
+
+                int leftIndex = Math.Max(index - 1, 0);
+                int rightIndex = Math.Min(index + 1, xs.Count() - 1);
+
+                var point = Mouse.GetPosition(this);
+                (double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
+
+                //var pixelX = e.MouseDevice.GetPosition(this).X;
+                //var pixelY = e.MouseDevice.GetPosition(this).Y;
+                //var ke = Plot.GetCoordinate((float)pixelX, (float)pixelY, 0, 0);
+                //(double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
+
+                CurrentXYLabel.IsVisible = true;
+                CurrentXYLabel.X = coordinateX + 30;
+                CurrentXYLabel.Y = coordinateY;
+                CurrentXYLabel.Label = $"x:{ps.Xs[ps.CurrentIndex]:f2} \r\ny:{ps.Ys[ps.CurrentIndex]:f2}";
+                CurrentXYLabel.BorderWidth = 0;
+                //currentXYLabel.ArrowSize = 20;
             }
         }
 

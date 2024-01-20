@@ -4,10 +4,11 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace Charting.Models
 {
-    public class OscillogramWave : INotifyPropertyChanged, IEquatable<OscillogramWave>
+    public class OscillogramWave : INotifyPropertyChanged, IEquatable<OscillogramWave>,ICloneable
     {
         private double wave;
         private string? description;
@@ -15,6 +16,18 @@ namespace Charting.Models
         private string? color;
 
         public event PropertyChangedEventHandler? PropertyChanged;
+        private double[] v;
+
+        public double[] V
+        {
+            get { return v; }
+            set
+            {
+                v = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("V"));
+            }
+        }
+
         public double Wave
         {
             get { return wave; }
@@ -51,6 +64,10 @@ namespace Charting.Models
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Color"));
             }
         }
+        public OscillogramWave()
+        {
+            V=new double[OscillogramCharting.AllNumConst];
+        }
         public OscillogramWave(double wave, string decription = default!)
         {
             Wave = wave;
@@ -60,6 +77,7 @@ namespace Charting.Models
                 Decription = wave.ToString();
             else
                 Decription = decription;
+            V = new double[OscillogramCharting.AllNumConst];
         }
 
         public static implicit operator OscillogramWave(double d) => new(d);
@@ -79,7 +97,11 @@ namespace Charting.Models
 
         public override int GetHashCode()
             => (Wave, Decription).GetHashCode();
-        public static bool operator == (OscillogramWave l1, OscillogramWave l2)
+
+        public object Clone()
+            =>new OscillogramWave(wave, Decription!) {  V=V, Color=Color, IsSelected=IsSelected};
+
+        public static bool operator ==(OscillogramWave l1, OscillogramWave l2)
         {
             if (l1 is null)
             {
@@ -94,6 +116,6 @@ namespace Charting.Models
             return l1.Equals(l2);
         }
         public static bool operator !=(OscillogramWave l1, OscillogramWave l2)
-            =>!(l1 == l2);
+            => !(l1 == l2);
     }
 }

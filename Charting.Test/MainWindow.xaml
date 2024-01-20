@@ -17,6 +17,7 @@
             <!--<RowDefinition/>-->
         </Grid.RowDefinitions>
         <charting:OscillogramCharting CurrentTimeIndex="{Binding CurrentTime}"
+                                      EnableEditDrag="{Binding EnableEditDrag}"
                                       GradientRealX="{Binding GradientRealX, Mode=TwoWay}"
                                       GradientRealY="{Binding GradientRealY, Mode=TwoWay}"
                                       GradientX="{Binding GradientX, Mode=TwoWay}"
@@ -27,7 +28,9 @@
                                       SpeedRealX="{Binding SpeedRealX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       SpeedRealY="{Binding SpeedRealY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       SpeedX="{Binding SpeedX, Mode=TwoWay}"
-                                      SpeedY="{Binding SpeedY, Mode=TwoWay}" />
+                                      SpeedY="{Binding SpeedY, Mode=TwoWay}"
+                                      Xs="{Binding X}"
+                                      Ys="{Binding Y}" />
         <!--<charting:OscillogramChartingCore Grid.Row="1" />-->
     </Grid>
 </Window>

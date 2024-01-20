@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Charting
 {
     /// <summary>
-    /// The scatter plot renders X/Y pairs as points and/or connected lines.
+    /// The scatter plot renders Y/Y pairs as points and/or connected lines.
     /// Scatter plots can be extremely slow for large datasets, so use Signal plots in these situations.
     /// </summary>
     public class ScatterPlotLimitDraggable : ScatterPlot, IDraggable
@@ -76,7 +76,7 @@ namespace Charting
         /// <summary>
         /// Move a scatter point to a new coordinate in plot space.
         /// </summary>
-        /// <param name="coordinateX">new X position</param>
+        /// <param name="coordinateX">new Y position</param>
         /// <param name="coordinateY">new Y position</param>
         /// <param name="fixedSize">This argument is ignored</param>
         public void DragTo(double coordinateX, double coordinateY, bool fixedSize)
@@ -87,7 +87,7 @@ namespace Charting
             Coordinate original = new(coordinateX, coordinateY);
             Coordinate snapped = DragSnap.Snap(original);
             Coordinate actual = MovePointFunc(Xs.ToList(), Ys.ToList(), CurrentIndex, snapped);
-            //coordinateX = snapped.X;
+            //coordinateX = snapped.Y;
             //coordinateY = snapped.Y;
 
             coordinateX = actual.X;

@@ -34,55 +34,46 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Rectangle Width="10" Height="10" Margin="5,0"
-                                               Fill="{Binding}" />
+                                    <Rectangle Width="10" Height="10" Margin="5,0" Fill="{Binding}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <!--#endregion-->
                         <StackPanel Grid.Column="1" Orientation="Horizontal">
 
-                            <ToggleButton Name="Part_Gradient" Margin="5,0,0,0" Content="Gra"
-                                          IsChecked="{TemplateBinding GradientShow}">
+                            <ToggleButton Name="Part_Gradient" Margin="5,0,0,0" Content="Gra" IsChecked="{TemplateBinding GradientShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#B060B0" />
                                     <SolidColorBrush x:Key="Color" Color="#B060B0" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <ToggleButton Name="Part_RealGradient" Margin="5,0,0,0" Content="RealGra"
-                                          IsChecked="{TemplateBinding RealGradientShow}">
+                            <ToggleButton Name="Part_RealGradient" Margin="5,0,0,0" Content="RealGra" IsChecked="{TemplateBinding RealGradientShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#FF0000" />
                                     <SolidColorBrush x:Key="Color" Color="#FF0000" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
-                                    BorderThickness="1" />
-                            <ToggleButton Name="Part_Speed" Margin="5,0,0,0" Content="Speed"
-                                          IsChecked="{TemplateBinding SpeedShow}">
+                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray" BorderThickness="1" />
+                            <ToggleButton Name="Part_Speed" Margin="5,0,0,0" Content="Speed" IsChecked="{TemplateBinding SpeedShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#FFAA25" />
                                     <SolidColorBrush x:Key="Color" Color="#FFAA25" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <ToggleButton Name="Part_RealSpeed" Margin="5,0,0,0" Content="RealSpeed"
-                                          IsChecked="{TemplateBinding RealSpeedShow}">
+                            <ToggleButton Name="Part_RealSpeed" Margin="5,0,0,0" Content="RealSpeed" IsChecked="{TemplateBinding RealSpeedShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#006400" />
                                     <SolidColorBrush x:Key="Color" Color="#006400" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
-                                    BorderThickness="1" />
-                            <ToggleButton Name="Part_Pressure" Margin="5,0,0,0" Content="Pressure"
-                                          IsChecked="{TemplateBinding PressureShow}">
+                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray" BorderThickness="1" />
+                            <ToggleButton Name="Part_Pressure" Margin="5,0,0,0" Content="Pressure" IsChecked="{TemplateBinding PressureShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#0076F6" />
                                     <SolidColorBrush x:Key="Color" Color="#0076F6" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
-                                    BorderThickness="1" />
+                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray" BorderThickness="1" />
                             <ListView Name="Part_Graph" Grid.Column="7" MaxWidth="500"
                                       Margin="0,0,40,0" Background="Transparent" BorderThickness="0"
                                       ItemsSource="{TemplateBinding Waves}"
@@ -108,10 +99,7 @@
                                                             BorderBrush="{TemplateBinding BorderBrush}"
                                                             BorderThickness="{TemplateBinding BorderThickness}"
                                                             CornerRadius="5" SnapsToDevicePixels="true">
-                                                        <ContentPresenter x:Name="ContentPresenter"
-                                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                        <ContentPresenter x:Name="ContentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
