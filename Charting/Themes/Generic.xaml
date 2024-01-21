@@ -2,10 +2,10 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Charting">
     <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/ToggleButton.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/OscillogramCharting.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/OscillogramChartingCore.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/ScrollViewStyle.xaml" />
-        <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/ToggleButton.xaml" />
 
     </ResourceDictionary.MergedDictionaries>
 

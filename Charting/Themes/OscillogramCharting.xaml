@@ -1,6 +1,10 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:Charting">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/ToggleButton.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+    <local:BoolToVisibleConverter x:Key="BoolToVisibleConverter" />
     <Style TargetType="{x:Type local:OscillogramCharting}">
         <Setter Property="GradientShow" Value="True" />
         <Setter Property="RealGradientShow" Value="True" />
@@ -12,6 +16,8 @@
         <Setter Property="CurrentTimeIndex" Value="0" />
         <Setter Property="GradientNum" Value="1280" />
         <Setter Property="SpeedNum" Value="1280" />
+        <Setter Property="DragX" Value="0" />
+        <Setter Property="DragY" Value="0" />
         <Setter Property="Margin" Value="0,5,0,0" />
         <Setter Property="Template">
             <Setter.Value>
@@ -25,6 +31,39 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="auto" />
                         </Grid.ColumnDefinitions>
+                        <StackPanel Height="30" Orientation="Horizontal">
+                            <ToggleButton Name="Part_Edit" Width="80" Margin="5,0,0,0"
+                                          Content="DragEdit"
+                                          IsChecked="{TemplateBinding EnableEditDrag}">
+                                <ToggleButton.Resources>
+                                    <SolidColorBrush x:Key="TextColor" Color="#B060B0" />
+                                    <SolidColorBrush x:Key="Color" Color="#B060B0" />
+                                </ToggleButton.Resources>
+                            </ToggleButton>
+                            <StackPanel Orientation="Horizontal" Visibility="{TemplateBinding EnableEditDrag, Converter={StaticResource BoolToVisibleConverter}}">
+                                <RadioButton Name="Part_DragAutoAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
+                                             Content="AutoAgjust" GroupName="DragEdit"
+                                             IsChecked="{TemplateBinding EnableEditDrag}" />
+                                <RadioButton Name="Part_DragIntervalAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
+                                             Content="IntervalAgjust" GroupName="DragEdit"
+                                             IsChecked="{TemplateBinding EnableEditDrag}" />
+                                <TextBlock Margin="15,0,0,0" Text="Speed" />
+                                <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
+                                    <Label Content="X:" />
+                                    <TextBox x:Name="Part_DragX" Width="90" Padding="0,2"
+                                             VerticalAlignment="Center"
+                                             Text="{Binding DragX, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
+                                    <Label Content="Y:" />
+                                    <TextBox x:Name="Part_DragY" Width="90" Padding="0,2"
+                                             VerticalAlignment="Center"
+                                             Text="{Binding DragY, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                            </StackPanel>
+                            <!--<Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray" BorderThickness="1" />-->
+                        </StackPanel>
                         <!--#region ColorShowSource-->
                         <ItemsControl ItemsSource="{TemplateBinding ColorShowSource}" Visibility="Collapsed">
                             <ItemsControl.ItemsPanel>
@@ -139,9 +178,9 @@
                                 </ListView.ItemTemplate>
                             </ListView>
                         </StackPanel>
-                        <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                        <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="LightGray" BorderThickness="0,1,0,0">
                             <local:OscillogramChartingCore x:Name="Part_OscillogramChartingCore" />
-                        </Grid>
+                        </Border>
 
                     </Grid>
                 </ControlTemplate>

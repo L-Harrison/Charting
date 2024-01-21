@@ -38,9 +38,15 @@ using Image = System.Windows.Controls.Image;
 namespace Charting
 {
     [TemplatePart(Name = OscillogramChartingCoreName, Type = typeof(OscillogramChartingCore))]
+    [TemplatePart(Name = DragXName, Type = typeof(TextBox))]
+    [TemplatePart(Name = DragYName, Type = typeof(TextBox))]
+    [TemplatePart(Name = EditName, Type = typeof(RadioButton))]
     public class OscillogramCharting : UserControl, IDisposable
     {
         public const string OscillogramChartingCoreName = "Part_OscillogramChartingCore";
+        public const string EditName = "Part_Edit";
+        public const string DragXName = "Part_DragX";
+        public const string DragYName = "Part_DragY";
         /// <summary>
         /// 总点数  单副图最大点数 
         /// 超过点数将不在刷新新增图
@@ -59,7 +65,48 @@ namespace Charting
         private OscillogramChartingCore Oscill;
 
         #region dp
+
         #region base data
+
+
+        //public static readonly DependencyProperty InputGestureTextProperty =
+        //    OscillogramCharting.InputGestureTextProperty.AddOwner(typeof(AppBarToggleButton));
+
+        //public string InputGestureText
+        //{
+        //    get => (string)GetValue(InputGestureTextProperty);
+        //    set => SetValue(InputGestureTextProperty, value);
+        //}
+
+        public double DragX
+        {
+            get { return (double)GetValue(DragXProperty); }
+            set { SetValue(DragXProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for DragX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty DragXProperty =
+            DependencyProperty.Register("DragX", typeof(double), typeof(OscillogramCharting), new PropertyMetadata(0d, OnDragXChanged));
+
+        private static void OnDragXChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+        }
+
+        public double DragY
+        {
+            get { return (double)GetValue(DragYProperty); }
+            set { SetValue(DragYProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for DragY.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty DragYProperty =
+            DependencyProperty.Register("DragY", typeof(double), typeof(OscillogramCharting), new PropertyMetadata(0d, OnDragYChanged));
+
+        private static void OnDragYChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+        }
+
+
         public bool EnableEditDrag
         {
             get { return (bool)GetValue(EnableEditDragProperty); }
@@ -72,29 +119,56 @@ namespace Charting
 
         private static void OnEnableEditDrag(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
+            var settings = ((OscillogramCharting)d).Oscill.Plot.GetSettings();
+            IDraggable[] enabledDraggables = settings.Plottables
+                               .Where(x => x is IDraggable)
+                               .Select(x => (IDraggable)x)
+                               //.Where(x => x.DragEnabled)
+                               .Where(x => x is IPlottable p && p.IsVisible)
+                               .ToArray();
+            foreach (var item in enabledDraggables)
+            {
+                if (item is ScatterPlot dr)
+                {
+                    dr.MarkerShape = (bool)e.NewValue ? MarkerShape.filledCircle : MarkerShape.none;
+                    item.DragEnabled = (bool)e.NewValue;
+                }
+            }
             if (!(bool)e.NewValue)
             {
                 ((OscillogramCharting)d).Oscill.CurrentXYLabel.IsVisible = false;
-
-                var settings = ((OscillogramCharting)d).Oscill.Plot.GetSettings();
-                IDraggable[] enabledDraggables = settings.Plottables
-                                      .Where(x => x is IDraggable)
-                                      .Select(x => (IDraggable)x)
-                                      .Where(x => x.DragEnabled)
-                                      .Where(x => x is IPlottable p && p.IsVisible)
-                                      .ToArray();
-                foreach (var item in enabledDraggables)
-                {
-                    if (item is ScatterPlot dr)
-                    {
-                        if (item.DragEnabled)
-                        {
-                            dr.MarkerShape = MarkerShape.none;
-                            item.DragEnabled = false;
-                        }
-                    }
-                }
+                ((OscillogramCharting)d).Oscill.DefaultMenus();
             }
+            else
+            {
+                ((OscillogramCharting)d).OscillMenus();
+            }
+        }
+        private void OscillMenus()
+        {
+            var cm = new ContextMenu();
+
+            MenuItem SaveImageMenuItem = new() { Header = "Add" };
+            SaveImageMenuItem.Click += (sender, e) => { };
+            cm.Items.Add(SaveImageMenuItem);
+
+            MenuItem CopyImageMenuItem = new() { Header = "Remove" };
+            CopyImageMenuItem.Click += (sender, e) => { };
+            cm.Items.Add(CopyImageMenuItem);
+
+
+
+            //MenuItem HelpMenuItem = new() { Header = "Help" };
+            //HelpMenuItem.Click += RightClickMenu_Help_Click;
+            //cm.Items.Add(HelpMenuItem);
+
+            //MenuItem OpenInNewWindowMenuItem = new() { Header = "Open in New Window" };
+            //OpenInNewWindowMenuItem.Click += RightClickMenu_OpenInNewWindow_Click;
+            //cm.Items.Add(OpenInNewWindowMenuItem);
+
+            //cm.IsOpen = true;
+
+            Oscill.Menus = cm!;
         }
 
         /// <summary>
@@ -667,7 +741,6 @@ namespace Charting
                             if (scatterSpectrum.Keys.Contains(wave))
                             {
                                 scatterSpectrum[wave].IsVisible = wave.IsSelected;
-
                             }
                         }
                     }
@@ -678,7 +751,6 @@ namespace Charting
                             if (scatterSpectrum.Keys.Contains(wave))
                             {
                                 scatterSpectrum[wave].IsVisible = wave.IsSelected;
-
                             }
                         }
                     }
@@ -711,10 +783,32 @@ namespace Charting
             {
                 RealSpeedEvent(toggleButton5);
             }
+            if (GetTemplateChild(EditName) is ToggleButton tb)
+            {
+                tb.Checked += (sender, e) =>
+                {
+                    if (!EnableEditDrag)
+                        EnableEditDrag = true;
+                };
+                tb.Unchecked += (sender, e) =>
+                {
+                    if (EnableEditDrag)
+                        EnableEditDrag = false;
+                };
+            }
+
             if (GetTemplateChild(OscillogramChartingCore.GraphName) is ListView itemsControl)
             {
                 GraphEvent(itemsControl);
             }
+            if (GetTemplateChild(DragXName) is TextBox  textBox)
+            {
+                //Binding binding = new Binding();
+                //binding.Path = new PropertyPath("Text");
+                ////binding.Source = this.DragX;
+                //BindingOperations.SetBinding(textBox, DragXProperty, binding);
+            }
+
 
         }
         private void Initilize()
@@ -765,6 +859,24 @@ namespace Charting
             Oscill.CurrentXYLabel.IsVisible = false;
             Oscill.CurrentXYLabel.HitTestEnabled = true;
 
+            //Oscill.RightClicked -= Oscill.DefaultRightClickEvent!;
+            //Oscill.RightClicked += Oscill_RightClicked;
+
+            Oscill.HasDraggable += (sneder, e) =>
+            {
+                EnableEditDrag = (bool)e;
+            };
+            Oscill.Dragped += (sender, e) =>
+            {
+                if (e is (double x, double y))
+                {
+                    DragX = x;
+                    DragY = y;
+                }
+            };
+            DragX = 12d;
+            DragY = 12d;
+
             #region ResetBaseGraph
             var x = new double[180];
             var y = new double[180];
@@ -786,7 +898,6 @@ namespace Charting
             scatterGradientFlag1.YAxisIndex = yAixsGradient.AxisIndex;
             #endregion
         }
-
 
         #region reset lines
         /// <summary>
@@ -946,7 +1057,7 @@ namespace Charting
             }
         }
 
-       
+
 
         /// <summary>
         /// 实时梯度线

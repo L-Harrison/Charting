@@ -137,6 +137,13 @@ namespace Charting
         private System.Windows.Controls.Image PlotImage;
 
 
+
+        public virtual  EventHandler<bool> HasDraggable { get; set; }
+
+        
+
+        
+
         public Crosshair Crosshair
         {
             get { return (Crosshair)GetValue(CrosshairProperty); }
@@ -161,7 +168,19 @@ namespace Charting
 
 
 
-      
+
+        public ContextMenu Menus
+        {
+            get { return (ContextMenu)GetValue(MenusProperty); }
+            set { SetValue(MenusProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for Menus.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty MenusProperty =
+            DependencyProperty.Register("Menus", typeof(ContextMenu), typeof(OscillogramChartingCore), new PropertyMetadata(null!));
+
+
+
 
         #region Plot
         /// <summary>
@@ -271,7 +290,8 @@ namespace Charting
                 [ScottPlot.Cursor.Question] = System.Windows.Input.Cursors.Help,
             };
 
-            RightClicked += DefaultRightClickEvent;
+            DefaultMenus();
+            RightClicked += DefaultRightClickEvent!;
             //InitializeComponent();
             //ErrorLabel.Visibility = System.Windows.Visibility.Hidden;
             Backend.StartProcessingEvents();
@@ -418,14 +438,9 @@ namespace Charting
                 bmp.UnlockBits(bmpData);
             }
         }
-
-        /// <summary>
-        /// Launch the default right-click menu.
-        /// </summary>
-        public void DefaultRightClickEvent(object sender, EventArgs e)
+        internal void DefaultMenus()
         {
             var cm = new ContextMenu();
-
             MenuItem SaveImageMenuItem = new() { Header = "Save Image" };
             SaveImageMenuItem.Click += RightClickMenu_SaveImage_Click;
             cm.Items.Add(SaveImageMenuItem);
@@ -437,7 +452,6 @@ namespace Charting
             MenuItem AutoAxisMenuItem = new() { Header = "Zoom to Fit Data" };
             AutoAxisMenuItem.Click += RightClickMenu_AutoAxis_Click;
             cm.Items.Add(AutoAxisMenuItem);
-
             //MenuItem HelpMenuItem = new() { Header = "Help" };
             //HelpMenuItem.Click += RightClickMenu_Help_Click;
             //cm.Items.Add(HelpMenuItem);
@@ -446,7 +460,17 @@ namespace Charting
             //OpenInNewWindowMenuItem.Click += RightClickMenu_OpenInNewWindow_Click;
             //cm.Items.Add(OpenInNewWindowMenuItem);
 
-            cm.IsOpen = true;
+            Menus = cm;
+
+        }
+
+        /// <summary>
+        /// Launch the default right-click menu.
+        /// </summary>
+        public void DefaultRightClickEvent(object sender, EventArgs e)
+        {
+            if (Menus != null)
+                Menus.IsOpen = true;
         }
         private void RightClickMenu_Copy_Click(object sender, EventArgs e) => System.Windows.Clipboard.SetImage(BmpImageFromBmp(Plot.Render()));
         //private void RightClickMenu_Help_Click(object sender, EventArgs e) => new WPF.HelpWindow().Show();
@@ -474,7 +498,7 @@ namespace Charting
         #endregion
 
 
-        private IDraggable GetDraggable(double xPixel, double yPixel, int snapDistancePixels = 5)
+        internal IDraggable GetDraggable(double xPixel, double yPixel, int snapDistancePixels = 5)
         {
             var settings = Plot.GetSettings();
             IDraggable[] enabledDraggables = settings.Plottables
@@ -503,6 +527,18 @@ namespace Charting
             }
 
             return null;
+        }
+        internal IDraggable[] GetDraggables()
+        {
+            var settings = Plot.GetSettings();
+            IDraggable[] enabledDraggables = settings.Plottables
+                                  .Where(x => x is IDraggable)
+                                  .Select(x => (IDraggable)x)
+                                  //.Where(x => x.DragEnabled)
+                                  .Where(x => x is IPlottable p && p.IsVisible)
+                                  .ToArray();
+
+            return enabledDraggables;
         }
 
         public override void OnApplyTemplate()
@@ -535,45 +571,7 @@ namespace Charting
             if (GetTemplateChild(PlotImageName) is Image contentControl)
             {
                 PlotImage = contentControl;
-                contentControl.MouseLeftButtonDown += (object sender, MouseButtonEventArgs e) =>
-                {
-                    Trace.WriteLine(e.ClickCount);
-                    if (e.ClickCount == 2)
-                    {
-                        var pixelX = e.MouseDevice.GetPosition(this).X;
-                        var pixelY = e.MouseDevice.GetPosition(this).Y;
-                        var ht = this.Plot.GetHittable(pixelX, pixelY);
-                        if (ht != null)
-                        {
-                            if (ht == CurrentXYLabel && ht.IsVisible)
-                            {
-                                MessageBox.Show("xx");
-                                return;
-                            }
-                        }
-                        else
-                        {
-                            (double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
 
-                            var dr = GetDraggable(pixelX, pixelY, 30);
-                            if (dr != null && dr is ScatterPlot scatterPlot)
-                            {
-                                if (dr.DragEnabled)
-                                {
-                                    scatterPlot.MarkerShape = MarkerShape.none;
-                                    dr.DragEnabled = false;
-                                    CurrentXYLabel.IsVisible = false;
-                                }
-                                else
-                                {
-                                    scatterPlot.MarkerShape = MarkerShape.filledCircle;
-                                    dr.DragEnabled = true;
-                                    CurrentXYLabel.IsVisible = true;
-                                }
-                            }
-                        }
-                    }
-                };
                 contentControl.MouseDown += (sender, e) =>
                 {
                     //Mouse.Capture(contentControl);
@@ -630,8 +628,7 @@ namespace Charting
                         }
 
                     }
-
-                    this.Refresh();
+                    this.Refresh(true);
                 };
                 contentControl.MouseUp += (sender, e) =>
                 {
@@ -661,6 +658,54 @@ namespace Charting
                     //if (Mouse.Captured == contentControl)
                     //    Mouse.Capture(null);
                     base.OnMouseLeave(e);
+                };
+
+                contentControl.MouseLeftButtonDown += (object sender, MouseButtonEventArgs e) =>
+                {
+                    Trace.WriteLine(e.ClickCount);
+                    if (e.ClickCount == 2)
+                    {
+                        var pixelX = e.MouseDevice.GetPosition(this).X;
+                        var pixelY = e.MouseDevice.GetPosition(this).Y;
+                        var ht = Plot.GetHittable(pixelX, pixelY);
+                        if (ht != null)
+                        {
+                            if (ht == CurrentXYLabel && ht.IsVisible)
+                            {
+                                MessageBox.Show("xx");
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            (double coordinateX, double coordinateY) = GetMouseCoordinates(0, 0);
+
+                            var dr = GetDraggable(pixelX, pixelY, 30);
+                            if (dr != null && dr is ScatterPlot scatterPlot)
+                            {
+                                if (dr.DragEnabled)
+                                {
+                                    scatterPlot.MarkerShape = MarkerShape.none;
+                                    dr.DragEnabled = false;
+                                    CurrentXYLabel.IsVisible = false;
+                                }
+                                else
+                                {
+                                    scatterPlot.MarkerShape = MarkerShape.filledCircle;
+                                    dr.DragEnabled = true;
+                                    CurrentXYLabel.IsVisible = true;
+                                }
+                            }
+                        }
+                        if (GetDraggables().Any(_ => _.DragEnabled))
+                        {
+                            HasDraggable?.Invoke(sender, true);
+                        }
+                        else
+                        {
+                            HasDraggable?.Invoke(sender, false);
+                        }
+                    }
                 };
 
             }
@@ -726,9 +771,12 @@ namespace Charting
                 CurrentXYLabel.Y = coordinateY;
                 CurrentXYLabel.Label = $"x:{ps.Xs[ps.CurrentIndex]:f2} \r\ny:{ps.Ys[ps.CurrentIndex]:f2}";
                 CurrentXYLabel.BorderWidth = 0;
+                Dragped?.Invoke(sender, (Math.Round(ps.Xs[ps.CurrentIndex],3), Math.Round(ps.Ys[ps.CurrentIndex],3)));
                 //currentXYLabel.ArrowSize = 20;
             }
+         
         }
+        public EventHandler<(double X, double Y)> Dragped;
 
     }
 }

@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Style x:Key="{x:Type ToggleButton}" TargetType="ToggleButton">
+    <Style x:Key="BtToggleButton" TargetType="ToggleButton">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Padding" Value="5,3" />
         <Setter Property="BorderBrush" Value="Transparent" />
@@ -8,9 +8,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="Background"
-                            Background="{TemplateBinding Background}"
-                            CornerRadius="5" SnapsToDevicePixels="True">
+                    <Border x:Name="Background" Background="{TemplateBinding Background}" CornerRadius="5" SnapsToDevicePixels="True">
                         <Border x:Name="Border"
                                 Padding="{TemplateBinding Padding}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
@@ -137,5 +135,5 @@
             </Setter.Value>
         </Setter>
     </Style>
-
+    <Style x:Key="{x:Type ToggleButton}" BasedOn="{StaticResource BtToggleButton}" TargetType="ToggleButton" />
 </ResourceDictionary>
