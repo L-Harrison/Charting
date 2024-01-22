@@ -538,7 +538,7 @@ namespace Charting
                     return draggable;
             }
 
-            return null;
+            return null!;
         }
         internal IDraggable[] GetDraggables()
         {

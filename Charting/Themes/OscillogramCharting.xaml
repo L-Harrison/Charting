@@ -5,6 +5,8 @@
         <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/ToggleButton.xaml" />
     </ResourceDictionary.MergedDictionaries>
     <local:BoolToVisibleConverter x:Key="BoolToVisibleConverter" />
+    <Color x:Key="ToolBar_BackgroundColor">#F3F3F3</Color>
+    <SolidColorBrush x:Key="ToolBar_Background" Color="{DynamicResource ToolBar_BackgroundColor}" />
     <Style TargetType="{x:Type local:OscillogramCharting}">
         <Setter Property="GradientShow" Value="True" />
         <Setter Property="RealGradientShow" Value="True" />
@@ -31,52 +33,73 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Height="30" Orientation="Horizontal">
-                            <ToggleButton Name="Part_Edit" Width="80" Margin="5,0,0,0"
-                                          Content="DragEdit"
+                        <StackPanel Height="50"
+                                    Background="{StaticResource ToolBar_Background}"
+                                    Orientation="Horizontal">
+                            <ToggleButton Name="Part_Edit" Width="80" Height="30"
+                                          Margin="5,0,0,0" Content="DragEdit"
                                           IsChecked="{TemplateBinding EnableEditDrag}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#B060B0" />
                                     <SolidColorBrush x:Key="Color" Color="#B060B0" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <StackPanel Orientation="Horizontal" Visibility="{TemplateBinding EnableEditDrag, Converter={StaticResource BoolToVisibleConverter}}">
-                                <RadioButton Name="Part_DragAutoAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
-                                             Content="AutoAgjust" GroupName="DragEdit"
-                                             IsChecked="{TemplateBinding EnableEditDrag}" />
-                                <RadioButton Name="Part_DragIntervalAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
-                                             Content="IntervalAgjust" GroupName="DragEdit"
-                                             IsChecked="{TemplateBinding EnableEditDrag}" />
-                                <TextBlock Width="50" Margin="15,0,0,0"
-                                           Text="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
-                                <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
-                                    <Label Content="X:" />
-                                    <TextBox x:Name="Part_DragX" Width="90" Padding="0,2"
-                                             VerticalAlignment="Center"
-                                             Text="{Binding DragX, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
-                                        <TextBox.Style>
-                                            <Style TargetType="TextBox">
-                                                <Setter Property="IsReadOnly" Value="True" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}}" Value="Speed">
-                                                        <Setter Property="IsReadOnly" Value="False" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}}" Value="Gradient">
-                                                        <Setter Property="IsReadOnly" Value="False" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBox.Style>
-                                    </TextBox>
-                                </StackPanel>
-                                <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
-                                    <Label Content="Y:" />
-                                    <TextBox x:Name="Part_DragY" Width="90" Padding="0,2"
-                                             VerticalAlignment="Center"
-                                             Text="{Binding DragY, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
-                                </StackPanel>
+                            <GroupBox Margin="5,0,0,0"
+                                      Header="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}"
+                                      Visibility="{TemplateBinding EnableEditDrag,
+                                                                   Converter={StaticResource BoolToVisibleConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Name="Part_DragAutoAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
+                                                 Content="AutoAgjust" GroupName="DragEdit"
+                                                 IsChecked="{TemplateBinding EnableEditDrag}" />
+                                    <RadioButton Name="Part_DragIntervalAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
+                                                 Content="IntervalAgjust" GroupName="DragEdit"
+                                                 IsChecked="{TemplateBinding EnableEditDrag}" />
+                                    <!--<TextBlock Width="50" Margin="15,0,0,0"
+                                               Text="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />-->
+                                    <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
+                                        <Label Content="X:" />
+                                        <TextBox x:Name="Part_DragX" Width="90" Padding="0,2"
+                                                 VerticalAlignment="Center"
+                                                 Text="{Binding DragX, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
+                                            <TextBox.Style>
+                                                <Style TargetType="TextBox">
+                                                    <Setter Property="IsReadOnly" Value="True" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}}" Value="Speed">
+                                                            <Setter Property="IsReadOnly" Value="False" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}}" Value="Gradient">
+                                                            <Setter Property="IsReadOnly" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBox.Style>
+                                        </TextBox>
+                                    </StackPanel>
+                                    <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
+                                        <Label Content="Y:" />
+                                        <TextBox x:Name="Part_DragY" Width="90" Padding="0,2"
+                                                 VerticalAlignment="Center"
+                                                 Text="{Binding DragY, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
+                                            <TextBox.Style>
+                                                <Style TargetType="TextBox">
+                                                    <Setter Property="IsReadOnly" Value="True" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}}" Value="Speed">
+                                                            <Setter Property="IsReadOnly" Value="False" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}}" Value="Gradient">
+                                                            <Setter Property="IsReadOnly" Value="False" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBox.Style>
+                                        </TextBox>
+                                    </StackPanel>
 
-                            </StackPanel>
+                                </StackPanel>
+                            </GroupBox>
                             <!--<Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray" BorderThickness="1" />-->
                         </StackPanel>
                         <!--#region ColorShowSource-->
@@ -94,49 +117,56 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <!--#endregion-->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <StackPanel Grid.Column="1"
+                                    Background="{StaticResource ToolBar_Background}"
+                                    Orientation="Horizontal">
 
-                            <ToggleButton Name="Part_Gradient" Margin="5,0,0,0" Content="Gra"
+                            <ToggleButton Name="Part_Gradient" Height="30" Margin="5,0,0,0"
+                                          Content="Gra"
                                           IsChecked="{TemplateBinding GradientShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#B060B0" />
                                     <SolidColorBrush x:Key="Color" Color="#B060B0" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <ToggleButton Name="Part_RealGradient" Margin="5,0,0,0" Content="RealGra"
+                            <ToggleButton Name="Part_RealGradient" Height="30" Margin="5,0,0,0"
+                                          Content="RealGra"
                                           IsChecked="{TemplateBinding RealGradientShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#FF0000" />
                                     <SolidColorBrush x:Key="Color" Color="#FF0000" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
-                                    BorderThickness="1" />
-                            <ToggleButton Name="Part_Speed" Margin="5,0,0,0" Content="Speed"
+                            <Border Height="30" Margin="4,8" HorizontalAlignment="Center"
+                                    BorderBrush="Gray" BorderThickness="1" />
+                            <ToggleButton Name="Part_Speed" Height="30" Margin="5,0,0,0"
+                                          Content="Speed"
                                           IsChecked="{TemplateBinding SpeedShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#FFAA25" />
                                     <SolidColorBrush x:Key="Color" Color="#FFAA25" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <ToggleButton Name="Part_RealSpeed" Margin="5,0,0,0" Content="RealSpeed"
+                            <ToggleButton Name="Part_RealSpeed" Height="30" Margin="5,0,0,0"
+                                          Content="RealSpeed"
                                           IsChecked="{TemplateBinding RealSpeedShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#006400" />
                                     <SolidColorBrush x:Key="Color" Color="#006400" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
-                                    BorderThickness="1" />
-                            <ToggleButton Name="Part_Pressure" Margin="5,0,0,0" Content="Pressure"
+                            <Border Height="30" Margin="4,8" HorizontalAlignment="Center"
+                                    BorderBrush="Gray" BorderThickness="1" />
+                            <ToggleButton Name="Part_Pressure" Height="30" Margin="5,0,0,0"
+                                          Content="Pressure"
                                           IsChecked="{TemplateBinding PressureShow}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#0076F6" />
                                     <SolidColorBrush x:Key="Color" Color="#0076F6" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
-                                    BorderThickness="1" />
+                            <Border Height="30" Margin="4,8" HorizontalAlignment="Center"
+                                    BorderBrush="Gray" BorderThickness="1" />
                             <ListView Name="Part_Graph" Grid.Column="7" MaxWidth="500"
                                       Margin="0,0,40,0" Background="Transparent" BorderThickness="0"
                                       ItemsSource="{TemplateBinding Waves}"
@@ -156,7 +186,7 @@
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="ListViewItem">
-                                                    <Border x:Name="Bd"
+                                                    <Border x:Name="Bd" Height="30"
                                                             Padding="{TemplateBinding Padding}"
                                                             Background="{TemplateBinding Background}"
                                                             BorderBrush="{TemplateBinding BorderBrush}"
