@@ -137,13 +137,36 @@ namespace Charting
         private System.Windows.Controls.Image PlotImage;
 
 
+        #region Draggable
+        /// <summary>
+        /// 是否存在可拖动的
+        /// </summary>
+        internal EventHandler<DraggableGraphContext> HasDraggable { get; set; }
 
-        public virtual  EventHandler<bool> HasDraggable { get; set; }
 
-        
+        internal DraggableGraphContext CurrentDraggableGraph
+        {
+            get { return (DraggableGraphContext)GetValue(CurrentDraggableGraphProperty); }
+            set { SetValue(CurrentDraggableGraphProperty, value); }
+        }
 
-        
+        // Using a DependencyProperty as the backing store for CurrentDraggableGraph.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CurrentDraggableGraphProperty =
+            DependencyProperty.Register("CurrentDraggableGraph", typeof(DraggableGraphContext), typeof(OscillogramChartingCore), new PropertyMetadata(new DraggableGraphContext()));
 
+
+        public Tooltip DragableLabel
+        {
+            get { return (Tooltip)GetValue(DragableLabelProperty); }
+            set { SetValue(DragableLabelProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for DragableLabel.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty DragableLabelProperty =
+            DependencyProperty.Register("DragableLabel", typeof(Tooltip), typeof(OscillogramChartingCore), new PropertyMetadata(new Tooltip()));
+        #endregion
+
+
+        #region Crosshair
         public Crosshair Crosshair
         {
             get { return (Crosshair)GetValue(CrosshairProperty); }
@@ -153,22 +176,12 @@ namespace Charting
         // Using a DependencyProperty as the backing store for Crosshair.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty CrosshairProperty =
             DependencyProperty.Register("Crosshair", typeof(Crosshair), typeof(OscillogramChartingCore), new PropertyMetadata(new Crosshair()));
+        #endregion
 
-
-
-        public Tooltip CurrentXYLabel
-        {
-            get { return (Tooltip)GetValue(CurrentXYLabelProperty); }
-            set { SetValue(CurrentXYLabelProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for CurrentXYLabel.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty CurrentXYLabelProperty =
-            DependencyProperty.Register("CurrentXYLabel", typeof(Tooltip), typeof(OscillogramChartingCore), new PropertyMetadata(new Tooltip()));
-
-
-
-
+        #region 菜单
+        /// <summary>
+        /// 菜单
+        /// </summary>
         public ContextMenu Menus
         {
             get { return (ContextMenu)GetValue(MenusProperty); }
@@ -179,8 +192,7 @@ namespace Charting
         public static readonly DependencyProperty MenusProperty =
             DependencyProperty.Register("Menus", typeof(ContextMenu), typeof(OscillogramChartingCore), new PropertyMetadata(null!));
 
-
-
+        #endregion
 
         #region Plot
         /// <summary>
@@ -632,7 +644,7 @@ namespace Charting
                 };
                 contentControl.MouseUp += (sender, e) =>
                 {
-                    //CurrentXYLabel.IsVisible = false;
+                    //DragableLabel.IsVisible = false;
                     Backend.MouseUp(GetInputState(e));
                     ReleaseMouseCapture();
                 };
@@ -659,18 +671,28 @@ namespace Charting
                     //    Mouse.Capture(null);
                     base.OnMouseLeave(e);
                 };
-
                 contentControl.MouseLeftButtonDown += (object sender, MouseButtonEventArgs e) =>
                 {
                     Trace.WriteLine(e.ClickCount);
+
+                    (double coordinateX, double coordinateY) = GetMouseCoordinates(0, 0);
+                    var pixelX = e.MouseDevice.GetPosition(this).X;
+                    var pixelY = e.MouseDevice.GetPosition(this).Y;
+                    var dr = GetDraggable(pixelX, pixelY, 30);
+                    if (dr != null && dr.DragEnabled)
+                    {
+                        if (dr is IGraphType graphType)
+                            CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                        else
+                            CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                    }
                     if (e.ClickCount == 2)
                     {
-                        var pixelX = e.MouseDevice.GetPosition(this).X;
-                        var pixelY = e.MouseDevice.GetPosition(this).Y;
+                  
                         var ht = Plot.GetHittable(pixelX, pixelY);
                         if (ht != null)
                         {
-                            if (ht == CurrentXYLabel && ht.IsVisible)
+                            if (ht == DragableLabel && ht.IsVisible)
                             {
                                 MessageBox.Show("xx");
                                 return;
@@ -678,34 +700,47 @@ namespace Charting
                         }
                         else
                         {
-                            (double coordinateX, double coordinateY) = GetMouseCoordinates(0, 0);
-
-                            var dr = GetDraggable(pixelX, pixelY, 30);
                             if (dr != null && dr is ScatterPlot scatterPlot)
                             {
                                 if (dr.DragEnabled)
                                 {
                                     scatterPlot.MarkerShape = MarkerShape.none;
                                     dr.DragEnabled = false;
-                                    CurrentXYLabel.IsVisible = false;
+                                    DragableLabel.IsVisible = false;
+
+                                    if (CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                                    {
+                                        CurrentDraggableGraph.DraggableGraph.Remove(dr);
+                                    }
+                                    if (CurrentDraggableGraph.CurrentDraggableGraph == dr)
+                                    {
+                                        CurrentDraggableGraph.CurrentDraggableGraph = null!;
+                                        //CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                                    }
                                 }
                                 else
                                 {
                                     scatterPlot.MarkerShape = MarkerShape.filledCircle;
                                     dr.DragEnabled = true;
-                                    CurrentXYLabel.IsVisible = true;
+                                    DragableLabel.IsVisible = true;
+
+                                    if (!CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                                    {
+                                        CurrentDraggableGraph.DraggableGraph.Add(dr);
+                                    }
+                                    if (CurrentDraggableGraph.CurrentDraggableGraph != dr)
+                                    {
+                                        CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                                        //if (dr is IGraphType graphType)
+                                        //    CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                                        //else
+                                        //    CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                                    }
                                 }
                             }
                         }
-                        if (GetDraggables().Any(_ => _.DragEnabled))
-                        {
-                            HasDraggable?.Invoke(sender, true);
-                        }
-                        else
-                        {
-                            HasDraggable?.Invoke(sender, false);
-                        }
                     }
+                    HasDraggable?.Invoke(sender, CurrentDraggableGraph);
                 };
 
             }
@@ -766,17 +801,34 @@ namespace Charting
                 //var ke = Plot.GetCoordinate((float)pixelX, (float)pixelY, 0, 0);
                 //(double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
 
-                CurrentXYLabel.IsVisible = true;
-                CurrentXYLabel.X = coordinateX + 30;
-                CurrentXYLabel.Y = coordinateY;
-                CurrentXYLabel.Label = $"x:{ps.Xs[ps.CurrentIndex]:f2} \r\ny:{ps.Ys[ps.CurrentIndex]:f2}";
-                CurrentXYLabel.BorderWidth = 0;
-                Dragped?.Invoke(sender, (Math.Round(ps.Xs[ps.CurrentIndex],3), Math.Round(ps.Ys[ps.CurrentIndex],3)));
+                DragableLabel.IsVisible = true;
+                DragableLabel.X = coordinateX + 30;
+                DragableLabel.Y = coordinateY;
+                DragableLabel.Label = $"x:{ps.Xs[ps.CurrentIndex]:f2} \r\ny:{ps.Ys[ps.CurrentIndex]:f2}";
+                DragableLabel.BorderWidth = 0;
+
+                if (ps is IDraggable dr)
+                {
+                    if (!CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                    {
+                        CurrentDraggableGraph.DraggableGraph.Add(dr);
+                    }
+                    if (CurrentDraggableGraph.CurrentDraggableGraph != dr)
+                    {
+                        CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                        if (dr is IGraphType graphType)
+                            CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                        else
+                            CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                    }
+                }
+
+                Dragped?.Invoke(sender, (Math.Round(ps.Xs[ps.CurrentIndex], 3), Math.Round(ps.Ys[ps.CurrentIndex], 3), CurrentDraggableGraph.CurrentDraggableGraph));
                 //currentXYLabel.ArrowSize = 20;
             }
-         
+
         }
-        public EventHandler<(double X, double Y)> Dragped;
+        public EventHandler<(double X, double Y,IDraggable)> Dragped;
 
     }
 }

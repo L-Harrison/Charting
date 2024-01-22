@@ -78,6 +78,22 @@ namespace Charting
         //    set => SetValue(InputGestureTextProperty, value);
         //}
 
+
+
+        public GraphType DragType
+        {
+            get { return (GraphType)GetValue(DragTypeProperty); }
+            set { SetValue(DragTypeProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for DragType.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty DragTypeProperty =
+            DependencyProperty.Register("DragType", typeof(GraphType), typeof(OscillogramCharting), new PropertyMetadata(GraphType.Null, OnDragTypeChanged));
+
+        private static void OnDragTypeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+        }
+
         public double DragX
         {
             get { return (double)GetValue(DragXProperty); }
@@ -90,6 +106,17 @@ namespace Charting
 
         private static void OnDragXChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
+            var dr = ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph;
+            if (dr != null && dr is ScatterPlotLimitDraggable tb)
+            {
+                tb.Xs[tb.CurrentIndex] = (double)e.NewValue;
+
+                //(double coordinateX, double coordinateY) = ((OscillogramCharting)d).Oscill.GetMouseCoordinates(0, 0);
+                //((OscillogramCharting)d).Oscill.DragableLabel.X = coordinateX + 30;
+                //((OscillogramCharting)d).Oscill.DragableLabel.Y = coordinateY;
+
+                //((OscillogramCharting)d).Oscill. DragableLabel.Label = $"x:{tb.Xs[tb.CurrentIndex]:f2} \r\ny:{tb.Ys[tb.CurrentIndex]:f2}";
+            }
         }
 
         public double DragY
@@ -104,6 +131,16 @@ namespace Charting
 
         private static void OnDragYChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
+            var dr = ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph;
+            if (dr!=null&&dr is ScatterPlotLimitDraggable tb)
+            {
+                tb.Ys[tb.CurrentIndex] =(double) e.NewValue;
+                //(double coordinateX, double coordinateY) = ((OscillogramCharting)d).Oscill.GetMouseCoordinates(0, 0);
+                //((OscillogramCharting)d).Oscill.DragableLabel.X = coordinateX + 30;
+                //((OscillogramCharting)d).Oscill.DragableLabel.Y = coordinateY;
+
+                //((OscillogramCharting)d).Oscill.DragableLabel.Label = $"x:{tb.Xs[tb.CurrentIndex]:f2} \r\ny:{tb.Ys[tb.CurrentIndex]:f2}";
+            }
         }
 
 
@@ -120,29 +157,69 @@ namespace Charting
         private static void OnEnableEditDrag(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var settings = ((OscillogramCharting)d).Oscill.Plot.GetSettings();
-            IDraggable[] enabledDraggables = settings.Plottables
-                               .Where(x => x is IDraggable)
-                               .Select(x => (IDraggable)x)
-                               //.Where(x => x.DragEnabled)
-                               .Where(x => x is IPlottable p && p.IsVisible)
-                               .ToArray();
-            foreach (var item in enabledDraggables)
-            {
-                if (item is ScatterPlot dr)
-                {
-                    dr.MarkerShape = (bool)e.NewValue ? MarkerShape.filledCircle : MarkerShape.none;
-                    item.DragEnabled = (bool)e.NewValue;
-                }
-            }
             if (!(bool)e.NewValue)
             {
-                ((OscillogramCharting)d).Oscill.CurrentXYLabel.IsVisible = false;
+                ((OscillogramCharting)d).Oscill.DragableLabel.IsVisible = false;
                 ((OscillogramCharting)d).Oscill.DefaultMenus();
+
+                IDraggable[] enabledDraggables = settings.Plottables
+                            .Where(x => x is IDraggable)
+                            .Select(x => (IDraggable)x)
+                            .Where(x => x.DragEnabled)
+                            .Where(x => x is IPlottable p && p.IsVisible)
+                            .ToArray();
+                foreach (var dr in enabledDraggables)
+                {
+                    if (dr is ScatterPlot Item)
+                    {
+                        Item.MarkerShape = (bool)e.NewValue ? MarkerShape.filledCircle : MarkerShape.none;
+                        dr.DragEnabled = (bool)e.NewValue;
+                    }
+                }
+                ((OscillogramCharting)d).DragType = GraphType.Null;
+
+                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Clear();
+                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = null!;
+                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
             }
             else
             {
                 ((OscillogramCharting)d).OscillMenus();
+
+                if (!((OscillogramCharting)d).Oscill.CurrentDraggableGraph.HasDraggable)
+                {
+                    IDraggable[] enabledDraggables = settings.Plottables
+                             .Where(x => x is IDraggable)
+                             .Select(x => (IDraggable)x)
+                             //.Where(x => x.DragEnabled)
+                             .Where(x => x is IPlottable p && p.IsVisible)
+                             .ToArray();
+                    foreach (var dr in enabledDraggables)
+                    {
+                        if (dr is ScatterPlot Item)
+                        {
+                            Item.MarkerShape = (bool)e.NewValue ? MarkerShape.filledCircle : MarkerShape.none;
+                            dr.DragEnabled = (bool)e.NewValue;
+
+                            if (!((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                            {
+                                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Add(dr);
+                            }
+                            if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph != dr)
+                            {
+                                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                                if (dr is IGraphType graphType)
+                                    ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                                else
+                                    ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                            }
+                        }
+                    }
+
+                }
+                 ((OscillogramCharting)d).DragType = ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType;
             }
+
         }
         private void OscillMenus()
         {
@@ -156,7 +233,13 @@ namespace Charting
             CopyImageMenuItem.Click += (sender, e) => { };
             cm.Items.Add(CopyImageMenuItem);
 
-
+            MenuItem AutoAxisMenuItem = new() { Header = "Zoom to Fit Data" };
+            AutoAxisMenuItem.Click +=(sender,e)=> {
+                Oscill.AutoZoom = true;
+                Oscill.Plot.AxisAuto();
+                Oscill.Refresh();
+            };
+            cm.Items.Add(AutoAxisMenuItem);
 
             //MenuItem HelpMenuItem = new() { Header = "Help" };
             //HelpMenuItem.Click += RightClickMenu_Help_Click;
@@ -801,7 +884,7 @@ namespace Charting
             {
                 GraphEvent(itemsControl);
             }
-            if (GetTemplateChild(DragXName) is TextBox  textBox)
+            if (GetTemplateChild(DragXName) is TextBox textBox)
             {
                 //Binding binding = new Binding();
                 //binding.Path = new PropertyPath("Text");
@@ -855,27 +938,34 @@ namespace Charting
             Oscill.Crosshair.VerticalLine.PositionFormatter = _ => $"{_:f1} s";
             Oscill.Crosshair.LineColor = System.Drawing.Color.Green;
 
-            Oscill.CurrentXYLabel = Oscill.Plot.AddTooltip(" ", 0.0, 0.0);
-            Oscill.CurrentXYLabel.IsVisible = false;
-            Oscill.CurrentXYLabel.HitTestEnabled = true;
+            Oscill.DragableLabel = Oscill.Plot.AddTooltip(" ", 0.0, 0.0);
+            Oscill.DragableLabel.IsVisible = false;
+            Oscill.DragableLabel.HitTestEnabled = true;
 
             //Oscill.RightClicked -= Oscill.DefaultRightClickEvent!;
             //Oscill.RightClicked += Oscill_RightClicked;
 
             Oscill.HasDraggable += (sneder, e) =>
             {
-                EnableEditDrag = (bool)e;
+                DragType = e.CurrentDraggableGraphType;
+                EnableEditDrag = e.HasDraggable;
             };
             Oscill.Dragped += (sender, e) =>
             {
-                if (e is (double x, double y))
+                if (e is (double x, double y, IDraggable dr))
                 {
                     DragX = x;
                     DragY = y;
+                    if (dr is IGraphType graphType)
+                    {
+                        DragType = graphType.GraphType;
+                    }
+                    else
+                    {
+                        DragType = GraphType.Null;
+                    }
                 }
             };
-            DragX = 12d;
-            DragY = 12d;
 
             #region ResetBaseGraph
             var x = new double[180];
@@ -938,7 +1028,7 @@ namespace Charting
             if (SpeedX.Count() != SpeedY.Count())
                 return;
 
-            var scatter = new ScatterPlotLimitDraggable(SpeedX, SpeedY)
+            var scatter = new ScatterPlotLimitDraggable(SpeedX, SpeedY, GraphType.Speed)
             {
                 DragCursor = ScottPlot.Cursor.All,
                 DragEnabled = false,
@@ -1019,7 +1109,7 @@ namespace Charting
                 Oscill.Plot.Remove(scatterGradient);
             if (GradientX.Count() != GradientY.Count())
                 return;
-            var scatter = new ScatterPlotLimitDraggable(GradientX, GradientY)
+            var scatter = new ScatterPlotLimitDraggable(GradientX, GradientY, GraphType.Gradient)
             {
                 DragCursor = ScottPlot.Cursor.All,
                 DragEnabled = false,

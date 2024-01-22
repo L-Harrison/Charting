@@ -1,4 +1,6 @@
-﻿using ScottPlot;
+﻿using Charting.Models;
+
+using ScottPlot;
 using ScottPlot.Plottable;
 using ScottPlot.SnapLogic;
 
@@ -14,7 +16,7 @@ namespace Charting
     /// The scatter plot renders Y/Y pairs as points and/or connected lines.
     /// Scatter plots can be extremely slow for large datasets, so use Signal plots in these situations.
     /// </summary>
-    public class ScatterPlotLimitDraggable : ScatterPlot, IDraggable
+    public class ScatterPlotLimitDraggable : ScatterPlot, IDraggable, IGraphType
     {
         public int CurrentIndex { get; set; } = 0;
 
@@ -73,6 +75,9 @@ namespace Charting
         /// This logic occurs after snapping.
         /// </summary>
         public Func<List<double>, List<double>, int, Coordinate, Coordinate> MovePointFunc { get; set; } = (xs, ys, index, moveTo) => moveTo;
+
+        public GraphType GraphType { private set; get; } 
+
         /// <summary>
         /// Move a scatter point to a new coordinate in plot space.
         /// </summary>
@@ -127,8 +132,14 @@ namespace Charting
             return test;
         }
 
-        public ScatterPlotLimitDraggable(double[] xs, double[] ys, double[] errorX = null, double[] errorY = null) : base(xs, ys, errorX, errorY)
+        public ScatterPlotLimitDraggable(double[] xs, double[] ys, GraphType graphType, double[] errorX = null, double[] errorY = null) : base(xs, ys, errorX, errorY)
         {
+            GraphType = graphType;
         }
+    }
+
+    public interface IGraphType
+    {
+        GraphType GraphType { get;  }
     }
 }
