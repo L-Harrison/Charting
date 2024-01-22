@@ -135,6 +135,7 @@ namespace Charting
         internal bool AutoZoom { set; get; } = true;
 
         private System.Windows.Controls.Image PlotImage;
+        internal bool isHighRefresh=false;
 
 
         #region Draggable
@@ -491,7 +492,7 @@ namespace Charting
         {
             AutoZoom = true;
             Plot.AxisAuto();
-            Refresh();
+            Refresh(isHighRefresh);
         }
         private void RightClickMenu_SaveImage_Click(object sender, EventArgs e)
         {
@@ -640,7 +641,7 @@ namespace Charting
                         }
 
                     }
-                    this.Refresh(true);
+                    this.Refresh(isHighRefresh);
                 };
                 contentControl.MouseUp += (sender, e) =>
                 {
@@ -662,11 +663,13 @@ namespace Charting
                 {
                     //Mouse.Capture(contentControl);
                     Crosshair.IsVisible = true;
+                    isHighRefresh = true;
                     base.OnMouseEnter(e);
                 };
                 contentControl.MouseLeave += (sender, e) =>
                 {
                     Crosshair.IsVisible = false;
+                    isHighRefresh = false;
                     //if (Mouse.Captured == contentControl)
                     //    Mouse.Capture(null);
                     base.OnMouseLeave(e);

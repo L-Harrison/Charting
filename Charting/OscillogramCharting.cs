@@ -132,9 +132,9 @@ namespace Charting
         private static void OnDragYChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var dr = ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph;
-            if (dr!=null&&dr is ScatterPlotLimitDraggable tb)
+            if (dr != null && dr is ScatterPlotLimitDraggable tb)
             {
-                tb.Ys[tb.CurrentIndex] =(double) e.NewValue;
+                tb.Ys[tb.CurrentIndex] = (double)e.NewValue;
                 //(double coordinateX, double coordinateY) = ((OscillogramCharting)d).Oscill.GetMouseCoordinates(0, 0);
                 //((OscillogramCharting)d).Oscill.DragableLabel.X = coordinateX + 30;
                 //((OscillogramCharting)d).Oscill.DragableLabel.Y = coordinateY;
@@ -234,10 +234,11 @@ namespace Charting
             cm.Items.Add(CopyImageMenuItem);
 
             MenuItem AutoAxisMenuItem = new() { Header = "Zoom to Fit Data" };
-            AutoAxisMenuItem.Click +=(sender,e)=> {
+            AutoAxisMenuItem.Click += (sender, e) =>
+            {
                 Oscill.AutoZoom = true;
                 Oscill.Plot.AxisAuto();
-                Oscill.Refresh();
+                Oscill.Refresh(true);
             };
             cm.Items.Add(AutoAxisMenuItem);
 
@@ -354,6 +355,8 @@ namespace Charting
             {
                 charting.scatterRealGradient.IsVisible = (bool)e.NewValue;
                 charting.yAixsGradient.IsVisible = (bool)e.NewValue || charting.GradientShow;
+
+
             }
         }
         public bool GradientShow
@@ -370,6 +373,48 @@ namespace Charting
             {
                 charting.scatterGradient.IsVisible = (bool)e.NewValue;
                 charting.yAixsGradient.IsVisible = (bool)e.NewValue || charting.RealGradientShow;
+
+                var settings = ((OscillogramCharting)d).Oscill.Plot.GetSettings();
+                IDraggable[] enabledDraggables = settings.Plottables
+                               .Where(x => x is IDraggable)
+                               .Select(x => (IDraggable)x)
+                               //.Where(x => x.DragEnabled)
+                               .Where(x => x is IGraphType graph && graph.GraphType == GraphType.Gradient)
+                               .Where(x => x is IPlottable p/* && p.IsVisible*/)
+                               .ToArray();
+                foreach (var dr in enabledDraggables)
+                {
+                    if (dr is ScatterPlot Item)
+                    {
+                        Item.IsVisible = (bool)e.NewValue;
+                    }
+                    if (!(bool)e.NewValue)
+                    {
+                        if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType == GraphType.Gradient)
+                        {
+                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = null!;
+                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                            if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                            {
+                                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Remove(dr);
+                            }
+                        }
+                        if (charting.DragType == GraphType.Gradient)
+                        {
+                            charting.DragType = GraphType.Null;
+                        }
+                    }
+                }
+
+
+                charting.EnableEditDrag = settings.Plottables
+                               .Where(x => x is IDraggable)
+                               .Select(x => (IDraggable)x)
+                               .Where(x => x.DragEnabled)
+                               //.Where(x => x is IGraphType graph && graph.GraphType == GraphType.Gradient)
+                               .Any(x => x is IPlottable p && p.IsVisible);
+
+
             }
         }
         public bool SpeedShow
@@ -386,7 +431,48 @@ namespace Charting
             {
                 charting.scatterSpeed.IsVisible = (bool)e.NewValue;
                 charting.yAixsSpeed.IsVisible = (bool)e.NewValue || charting.RealSpeedShow;
+
+
+                var settings = ((OscillogramCharting)d).Oscill.Plot.GetSettings();
+                IDraggable[] enabledDraggables = settings.Plottables
+                               .Where(x => x is IDraggable)
+                               .Select(x => (IDraggable)x)
+                               //.Where(x => x.DragEnabled)
+                               .Where(x => x is IGraphType graph && graph.GraphType == GraphType.Speed)
+                               .Where(x => x is IPlottable p/* && p.IsVisible*/)
+                               .ToArray();
+                foreach (var dr in enabledDraggables)
+                {
+                    if (dr is ScatterPlot Item)
+                    {
+                        Item.IsVisible = (bool)e.NewValue;
+                    }
+                    if (!(bool)e.NewValue)
+                    {
+                        if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType == GraphType.Speed)
+                        {
+                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = null!;
+                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                            if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                            {
+                                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Remove(dr);
+                            }
+                        }
+                        if (charting.DragType == GraphType.Speed)
+                        {
+                            charting.DragType = GraphType.Null;
+                        }
+                    }
+                }
+
+                charting.EnableEditDrag = settings.Plottables
+                               .Where(x => x is IDraggable)
+                               .Select(x => (IDraggable)x)
+                               .Where(x => x.DragEnabled)
+                               //.Where(x => x is IGraphType graph && graph.GraphType == GraphType.Gradient)
+                               .Any(x => x is IPlottable p && p.IsVisible);
             }
+
         }
         public bool RealSpeedShow
         {
@@ -727,7 +813,7 @@ namespace Charting
             // create a timer to update the GUI
             _renderTimer = new DispatcherTimer();
             _renderTimer.Interval = TimeSpan.FromMilliseconds(20);
-            _renderTimer.Tick += (sender, e) => Oscill?.AutoRender();
+            _renderTimer.Tick += (sender, e) => Oscill?.AutoRender(Oscill.isHighRefresh);
             _renderTimer.Start();
 
         }
