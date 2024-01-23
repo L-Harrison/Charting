@@ -44,11 +44,52 @@
                                     <SolidColorBrush x:Key="Color" Color="#B060B0" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
-                            <GroupBox Margin="5,-8,0,0"
-                                      Header="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}"
-                                      Visibility="{TemplateBinding EnableEditDrag,
-                                                                   Converter={StaticResource BoolToVisibleConverter}}">
+                            <GroupBox Margin="5,-8,0,0" Header="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
+                                <GroupBox.Style>
+                                    <Style TargetType="GroupBox">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding EnableEditDrag, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="True" />
+                                                    <Condition Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Gradient" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding EnableEditDrag, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="True" />
+                                                    <Condition Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Speed" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding EnableEditDrag, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="True" />
+                                                    <Condition Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="EndClockLine" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </GroupBox.Style>
                                 <StackPanel Orientation="Horizontal">
+                                    <StackPanel.Style>
+                                        <Style TargetType="StackPanel">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <!--<DataTrigger Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Null">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>-->
+                                                <DataTrigger Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Gradient">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Speed">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </StackPanel.Style>
                                     <RadioButton Name="Part_DragAutoAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
                                                  Content="AutoAgjust" GroupName="DragEdit"
                                                  IsChecked="{TemplateBinding EnableEditDrag}" />

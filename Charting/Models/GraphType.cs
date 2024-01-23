@@ -44,5 +44,9 @@ namespace Charting.Models
         /// 峰
         /// </summary>
         Peak = 1 << 9,
+        /// <summary>
+        /// 结束时钟线
+        /// </summary>
+        EndClockLine=1<<10,
     }
 }

@@ -107,9 +107,9 @@ namespace Charting.Test
         private void Timer_Tick1(object? sender, EventArgs e)
         {
             return;
-            var x = new double[CurrentTime];
-            var y = new double[CurrentTime];
-            for (int i = 0; i < CurrentTime; i++)
+            var x = new double[LastTime];
+            var y = new double[LastTime];
+            for (int i = 0; i < LastTime; i++)
             {
                 x[i] = (double)i;
                 y[i] = Math.Cos(i % 90) * 1000 * i;

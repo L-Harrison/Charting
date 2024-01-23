@@ -13,4 +13,8 @@
     <PackageReference Include="ScottPlot" Version="4.1.70" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TemplateSelectors\" />
+  </ItemGroup>
+
 </Project>

@@ -1,4 +1,5 @@
-﻿using Charting.Models;
+﻿using Charting.Extensions;
+using Charting.Models;
 
 using Microsoft.Win32;
 
@@ -159,7 +160,11 @@ namespace Charting
             var settings = ((OscillogramCharting)d).Oscill.Plot.GetSettings();
             if (!(bool)e.NewValue)
             {
-                ((OscillogramCharting)d).Oscill.DragableLabel.IsVisible = false;
+                //((OscillogramCharting)d).Oscill.DragableLabel.IsVisible = false;
+                //((OscillogramCharting)d).scatterrEndTimeLine.IsVisible = false;
+                //((OscillogramCharting)d).scatterrEndTimeLine.DragEnabled = false;
+
+
                 ((OscillogramCharting)d).Oscill.DefaultMenus();
 
                 IDraggable[] enabledDraggables = settings.Plottables
@@ -171,19 +176,21 @@ namespace Charting
                 foreach (var dr in enabledDraggables)
                 {
                     if (dr is ScatterPlot Item)
-                    {
                         Item.MarkerShape = (bool)e.NewValue ? MarkerShape.filledCircle : MarkerShape.none;
-                        dr.DragEnabled = (bool)e.NewValue;
-                    }
+                    if (dr is IGraphType graphType1 && graphType1.GraphType == GraphType.EndClockLine && dr is OscillogramVLine l)
+                        l.LineWidth = 1;
+                    dr.DragEnabled = (bool)e.NewValue;
                 }
                 ((OscillogramCharting)d).DragType = GraphType.Null;
-
                 ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Clear();
                 ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = null!;
                 ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+
             }
             else
             {
+                //((OscillogramCharting)d).scatterrEndTimeLine.DragEnabled = false;
+
                 ((OscillogramCharting)d).OscillMenus();
 
                 if (!((OscillogramCharting)d).Oscill.CurrentDraggableGraph.HasDraggable)
@@ -197,22 +204,23 @@ namespace Charting
                     foreach (var dr in enabledDraggables)
                     {
                         if (dr is ScatterPlot Item)
-                        {
                             Item.MarkerShape = (bool)e.NewValue ? MarkerShape.filledCircle : MarkerShape.none;
-                            dr.DragEnabled = (bool)e.NewValue;
-
-                            if (!((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
-                            {
-                                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Add(dr);
-                            }
-                            if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph != dr)
-                            {
-                                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = dr!;
-                                if (dr is IGraphType graphType)
-                                    ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
-                                else
-                                    ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
-                            }
+                        dr.DragEnabled = (bool)e.NewValue;
+                        if (dr is IGraphType graphType1 && graphType1.GraphType == GraphType.EndClockLine && dr is OscillogramVLine l)
+                        {
+                            l.LineWidth = 3;
+                        }
+                        if (!((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                        {
+                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Add(dr);
+                        }
+                        if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph != dr)
+                        {
+                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                            if (dr is IGraphType graphType)
+                                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                            else
+                                ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
                         }
                     }
 
@@ -290,6 +298,9 @@ namespace Charting
             ((OscillogramCharting)d).ResetRealGradient();
             ((OscillogramCharting)d).ResetSpectrum();
             ((OscillogramCharting)d).ResetPressure();
+
+            ((OscillogramCharting)d).ResetEndClockLine();
+
         }
 
 
@@ -769,7 +780,10 @@ namespace Charting
         /// pressure = ScatterPlot
         /// </summary>
         private IPlottable? scatterPressure = null;
-
+        /// <summary>
+        /// EndTimeLine =VLine
+        /// </summary>
+        private OscillogramVLine? scatterrEndTimeLine = null!;
         #endregion
 
         static OscillogramCharting()
@@ -1076,6 +1090,105 @@ namespace Charting
         }
 
         #region reset lines
+        private void ResetEndClockLine()
+        {
+            double CustomSnapFunction(double value)
+            {
+                // multiple of 3 between 0 and 50
+                //if (value < 0) return 0;
+                //else if (value > 50) return 50;
+                //else return (int)Math.Round(value / 3) * 3;
+                return value;
+            }
+            var SnapDisabled = new ScottPlot.SnapLogic.NoSnap1D();
+            var SnapCustom = new Custom1D(CustomSnapFunction);
+            scatterrEndTimeLine = Oscill.Plot.AddOscillogramVerticalLine(graphType: GraphType.EndClockLine, LastTimeIndex, ColorTranslator.FromHtml("#FB4A3E"), 1.0f);
+            scatterrEndTimeLine.DragEnabled = EnableEditDrag;
+            scatterrEndTimeLine.LineStyle = LineStyle.DashDotDot;
+            scatterrEndTimeLine.PositionLabel = true;
+            scatterrEndTimeLine.PositionLabelBackground = System.Drawing.Color.LightGray;
+            scatterrEndTimeLine.PositionLabelOppositeAxis = true;
+            scatterrEndTimeLine.PositionFormatter = (x) =>
+            {
+                return $"TotalTime={(x / 60):F2}min";
+            };
+            scatterrEndTimeLine.DragSnap = new ScottPlot.SnapLogic.Independent2D(SnapCustom, SnapDisabled);
+            scatterrEndTimeLine.DragLimitMin = 0;
+            scatterrEndTimeLine.DragLimitMax = 2 * 3600;
+            scatterrEndTimeLine.Dragged += ScatterrEndTimeLine_Dragged;
+            scatterrEndTimeLine.MovePointFunc = MoveBetweenAdjacentOscillogramVerticalLine;
+
+
+        }
+
+        Coordinate MoveBetweenAdjacentOscillogramVerticalLine(Coordinate requested)
+        {
+            var step = 100;
+
+            var speedCount = SpeedX.Count(_ => _ > CurrentTimeIndex + step);
+            var gradientCount = GradientX.Count(_ => _ > CurrentTimeIndex + step);
+            var min = speedCount < gradientCount ? speedCount : gradientCount;
+
+            Range(SpeedX, step, CurrentTimeIndex, min, ref requested);
+            Range(GradientX, step, CurrentTimeIndex, min, ref requested);
+
+            //LastTimeIndex = (int)requested.X;
+            return requested;
+        }
+        void Range(double[] source, double step, double current, double min, ref Coordinate target)
+        {
+            var list= source.ToList();
+            var item = list.FirstOrDefault(_ => _ > current + step);
+            if (item == null!)
+                return;
+            var speedCount = source.Count(_ => _ > current + step);
+            var index=list.IndexOf(item);
+            int addIndex = 1;
+            for ( var i = index-1; i < source.Length; i++)
+            {
+                list[i] = current + step* addIndex++;
+            }
+
+
+            var minSpeedRange = speedCount * step;
+            min = min < speedCount ? min : speedCount;
+
+            if (target.X <= (min * step + current))
+            {
+                target.X = min * step + current;
+            }
+            source[source.Length - 1] = target.X;
+
+
+
+
+
+            for (int i = source.Length - 2; i >= source.Length - speedCount; i--)
+            {
+                if (source[i] - step <= current + (i - speedCount) * step)
+                    continue;
+                if (i == source.Length - speedCount + 1)
+                {
+
+                }
+                if (source[i] >= source[i + 1] - step)
+                {
+                    source[i] = source[i + 1] - step;
+                }
+
+            }
+        }
+
+        private void ScatterrEndTimeLine_Dragged(object? sender, EventArgs e)
+        {
+            var vline = sender as OscillogramVLine;
+            if (vline == null) return;
+            //if (DragAction)
+            //{
+
+            //}
+        }
+
         /// <summary>
         /// 谱图线
         /// </summary>

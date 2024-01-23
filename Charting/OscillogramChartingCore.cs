@@ -135,7 +135,7 @@ namespace Charting
         internal bool AutoZoom { set; get; } = true;
 
         private System.Windows.Controls.Image PlotImage;
-        internal bool isHighRefresh=false;
+        internal bool isHighRefresh = false;
 
 
         #region Draggable
@@ -154,6 +154,68 @@ namespace Charting
         // Using a DependencyProperty as the backing store for CurrentDraggableGraph.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty CurrentDraggableGraphProperty =
             DependencyProperty.Register("CurrentDraggableGraph", typeof(DraggableGraphContext), typeof(OscillogramChartingCore), new PropertyMetadata(new DraggableGraphContext()));
+
+        private void UpdateDraggable(IDraggable? dr)
+        {
+            if (dr == null) return;
+            if (dr.DragEnabled)
+            {
+
+                if (CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                    CurrentDraggableGraph.DraggableGraph.Remove(dr);
+                if (CurrentDraggableGraph.CurrentDraggableGraph == dr)
+                {
+                    CurrentDraggableGraph.CurrentDraggableGraph = null!;
+                    CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                }
+            }
+            else
+            {
+                if (!CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                    CurrentDraggableGraph.DraggableGraph.Add(dr);
+                if (CurrentDraggableGraph.CurrentDraggableGraph != dr)
+                {
+                    CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                    if (dr is IGraphType graphType)
+                        CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                    else
+                        CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                }
+            }
+            if (dr is ScatterPlot scatterPlot)
+            {
+                if (dr.DragEnabled)
+                {
+                    scatterPlot.MarkerShape = MarkerShape.none;
+                    dr.DragEnabled = false;
+                    DragableLabel.IsVisible = false;
+                }
+                else
+                {
+                    scatterPlot.MarkerShape = MarkerShape.filledCircle;
+                    dr.DragEnabled = true;
+                    DragableLabel.IsVisible = true;
+                }
+            }
+            else if (dr is OscillogramVLine vLine)
+            {
+                if (dr.DragEnabled)
+                {
+                    vLine.LineWidth = 1;
+                    dr.DragEnabled = false;
+                }
+                else
+                {
+                    vLine.LineWidth = 3;
+                    dr.DragEnabled = true;
+                }
+            }
+            else
+            {
+
+            }
+
+        }
 
 
         public Tooltip DragableLabel
@@ -691,59 +753,26 @@ namespace Charting
                     }
                     if (e.ClickCount == 2)
                     {
-                  
+
                         var ht = Plot.GetHittable(pixelX, pixelY);
                         if (ht != null)
                         {
                             if (ht == DragableLabel && ht.IsVisible)
                             {
-                                MessageBox.Show("xx");
                                 return;
                             }
                         }
                         else
                         {
-                            if (dr != null && dr is ScatterPlot scatterPlot)
-                            {
-                                if (dr.DragEnabled)
-                                {
-                                    scatterPlot.MarkerShape = MarkerShape.none;
-                                    dr.DragEnabled = false;
-                                    DragableLabel.IsVisible = false;
-
-                                    if (CurrentDraggableGraph.DraggableGraph.Contains(dr))
-                                    {
-                                        CurrentDraggableGraph.DraggableGraph.Remove(dr);
-                                    }
-                                    if (CurrentDraggableGraph.CurrentDraggableGraph == dr)
-                                    {
-                                        CurrentDraggableGraph.CurrentDraggableGraph = null!;
-                                        //CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
-                                    }
-                                }
-                                else
-                                {
-                                    scatterPlot.MarkerShape = MarkerShape.filledCircle;
-                                    dr.DragEnabled = true;
-                                    DragableLabel.IsVisible = true;
-
-                                    if (!CurrentDraggableGraph.DraggableGraph.Contains(dr))
-                                    {
-                                        CurrentDraggableGraph.DraggableGraph.Add(dr);
-                                    }
-                                    if (CurrentDraggableGraph.CurrentDraggableGraph != dr)
-                                    {
-                                        CurrentDraggableGraph.CurrentDraggableGraph = dr!;
-                                        //if (dr is IGraphType graphType)
-                                        //    CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
-                                        //else
-                                        //    CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
-                                    }
-                                }
-                            }
+                            UpdateDraggable(dr!);
                         }
+                        HasDraggable?.Invoke(sender, CurrentDraggableGraph);
                     }
-                    HasDraggable?.Invoke(sender, CurrentDraggableGraph);
+                    else
+                    {
+                        HasDraggable?.Invoke(sender, CurrentDraggableGraph);
+
+                    }
                 };
 
             }
@@ -752,8 +781,6 @@ namespace Charting
                 MarinGEvent(grid);
             }
         }
-
-
 
         public virtual void MarinGEvent(Grid grid)
         {
@@ -831,7 +858,7 @@ namespace Charting
             }
 
         }
-        public EventHandler<(double X, double Y,IDraggable)> Dragped;
+        public EventHandler<(double X, double Y, IDraggable)> Dragped;
 
     }
 }
