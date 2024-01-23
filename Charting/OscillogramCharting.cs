@@ -31,6 +31,7 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 
 using Cursor = ScottPlot.Cursor;
@@ -81,6 +82,32 @@ namespace Charting
 
 
 
+        public bool AutoRightAdjustEnable
+        {
+            get { return (bool)GetValue(AutoRightAdjustEnableProperty); }
+            set { SetValue(AutoRightAdjustEnableProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for AutoRightAdjustEnable.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty AutoRightAdjustEnableProperty =
+            DependencyProperty.Register("AutoRightAdjustEnable", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false));
+
+
+
+        public bool IntervalAdjustEnable
+        {
+            get { return (bool)GetValue(IntervalAdjustEnableProperty); }
+            set { SetValue(IntervalAdjustEnableProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IntervalAdjustEnable.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IntervalAdjustEnableProperty =
+            DependencyProperty.Register("IntervalAdjustEnable", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false));
+
+
+
+
+
         public GraphType DragType
         {
             get { return (GraphType)GetValue(DragTypeProperty); }
@@ -110,13 +137,18 @@ namespace Charting
             var dr = ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph;
             if (dr != null && dr is ScatterPlotLimitDraggable tb)
             {
-                tb.Xs[tb.CurrentIndex] = (double)e.NewValue;
+                int leftIndex = Math.Max(tb.CurrentIndex - 1, 0);
+                int rightIndex = Math.Min(tb.CurrentIndex + 1, tb.Xs.Length - 1);
+                double newX = (double)e.NewValue;
+                newX = Math.Max(newX, tb.Xs[leftIndex]);
+                newX = Math.Min(newX, tb.Xs[rightIndex]);
+                tb.Xs[tb.CurrentIndex] = newX;
 
                 //(double coordinateX, double coordinateY) = ((OscillogramCharting)d).Oscill.GetMouseCoordinates(0, 0);
                 //((OscillogramCharting)d).Oscill.DragableLabel.X = coordinateX + 30;
                 //((OscillogramCharting)d).Oscill.DragableLabel.Y = coordinateY;
 
-                //((OscillogramCharting)d).Oscill. DragableLabel.Label = $"x:{tb.Xs[tb.CurrentIndex]:f2} \r\ny:{tb.Ys[tb.CurrentIndex]:f2}";
+                //((OscillogramCharting)d).Oscill. DragableLabel.Label = $"x:{tb.Xs[tb.cIndex]:f2} \r\ny:{tb.Ys[tb.cIndex]:f2}";
             }
         }
 
@@ -140,7 +172,7 @@ namespace Charting
                 //((OscillogramCharting)d).Oscill.DragableLabel.X = coordinateX + 30;
                 //((OscillogramCharting)d).Oscill.DragableLabel.Y = coordinateY;
 
-                //((OscillogramCharting)d).Oscill.DragableLabel.Label = $"x:{tb.Xs[tb.CurrentIndex]:f2} \r\ny:{tb.Ys[tb.CurrentIndex]:f2}";
+                //((OscillogramCharting)d).Oscill.DragableLabel.Label = $"x:{tb.Xs[tb.cIndex]:f2} \r\ny:{tb.Ys[tb.cIndex]:f2}";
             }
         }
 
@@ -234,11 +266,153 @@ namespace Charting
             var cm = new ContextMenu();
 
             MenuItem SaveImageMenuItem = new() { Header = "Add" };
-            SaveImageMenuItem.Click += (sender, e) => { };
+            SaveImageMenuItem.Click += (sender, e) =>
+            {
+                var pixelX = Mouse.GetPosition(this).X;
+                var pixelY = Mouse.GetPosition(this).Y;
+            
+                if (DragType ==GraphType.Gradient)
+                {
+                    (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatterGradient?.YAxisIndex??0);
+                    bool test = false;
+                    var cIndex = 0;
+                    for (int i = 0; i < GradientX.Length-1; i++)
+                    {
+                        if (coordinateX- GradientX[i]>=0&& GradientX[i+1]> coordinateX)
+                        {
+                            cIndex = i;
+                            test =true;
+                            break;
+                        }
+                    }
+                    if (test)
+                    {
+                        var newArryX = new double[GradientX.Length + 1];
+                        var newArryY = new double[GradientX.Length + 1];
+                        Array.Copy(GradientX, newArryX, cIndex + 1);
+                        newArryX[cIndex+1]= coordinateX;
+                        Array.Copy(GradientX, cIndex + 1, newArryX, cIndex + 2, GradientX.Length- cIndex - 1);
+
+                        Array.Copy(GradientY, newArryY, cIndex + 1);
+                        newArryY[cIndex + 1] = coordinateY;
+                        Array.Copy(GradientY, cIndex + 1, newArryY, cIndex + 2, GradientY.Length - cIndex - 1);
+
+                        GradientX = newArryX;
+                        GradientY = newArryY;
+                        ResetGradient();
+
+                    }
+                    
+                }
+
+                if (DragType == GraphType.Speed)
+                {
+                    (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatterSpeed?.YAxisIndex??0);
+                    bool test = false;
+                    var cIndex = 0;
+                    for (int i = 0; i < SpeedX.Length - 1; i++)
+                    {
+                        if (coordinateX - SpeedX[i] >= 0 && SpeedX[i + 1] > coordinateX)
+                        {
+                            cIndex = i;
+                            test = true;
+                            break;
+                        }
+                    }
+                    if (test)
+                    {
+                        var newArryX = new double[SpeedX.Length + 1];
+                        var newArryY = new double[SpeedX.Length + 1];
+                        Array.Copy(SpeedX, newArryX, cIndex + 1);
+                        newArryX[cIndex + 1] = coordinateX;
+                        Array.Copy(SpeedX, cIndex + 1, newArryX, cIndex + 2, SpeedX.Length - cIndex - 1);
+
+                        Array.Copy(SpeedY, newArryY, cIndex + 1);
+                        newArryY[cIndex + 1] = coordinateY;
+                        Array.Copy(SpeedY, cIndex + 1, newArryY, cIndex + 2, SpeedY.Length - cIndex - 1);
+
+                        SpeedX = newArryX;
+                        SpeedY = newArryY;
+                        ResetSpeed();
+
+                    }
+
+                }
+
+            };
             cm.Items.Add(SaveImageMenuItem);
 
             MenuItem CopyImageMenuItem = new() { Header = "Remove" };
-            CopyImageMenuItem.Click += (sender, e) => { };
+            CopyImageMenuItem.Click += (sender, e) =>
+            {
+                if (DragType == GraphType.Gradient)
+                {
+                    (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatterGradient?.YAxisIndex ?? 0);
+                    bool test = false;
+                    var cIndex = 0;
+                    for (int i = 0; i < GradientX.Length - 1; i++)
+                    {
+                        if (coordinateX - GradientX[i] >= 0 && GradientX[i + 1] > coordinateX)
+                        {
+                            cIndex = i;
+                            test = true;
+                            break;
+                        }
+                    }
+                    if (test)
+                    {
+                        var newArryX = new double[GradientX.Length + 1];
+                        var newArryY = new double[GradientX.Length + 1];
+                        Array.Copy(GradientX, newArryX, cIndex + 1);
+                        newArryX[cIndex + 1] = coordinateX;
+                        Array.Copy(GradientX, cIndex + 1, newArryX, cIndex + 2, GradientX.Length - cIndex - 1);
+
+                        Array.Copy(GradientY, newArryY, cIndex + 1);
+                        newArryY[cIndex + 1] = coordinateY;
+                        Array.Copy(GradientY, cIndex + 1, newArryY, cIndex + 2, GradientY.Length - cIndex - 1);
+
+                        GradientX = newArryX;
+                        GradientY = newArryY;
+                        ResetGradient();
+
+                    }
+
+                }
+
+                if (DragType == GraphType.Speed)
+                {
+                    (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatterSpeed?.YAxisIndex ?? 0);
+                    bool test = false;
+                    var cIndex = 0;
+                    for (int i = 0; i < SpeedX.Length - 1; i++)
+                    {
+                        if (coordinateX - SpeedX[i] >= 0 && SpeedX[i + 1] > coordinateX)
+                        {
+                            cIndex = i;
+                            test = true;
+                            break;
+                        }
+                    }
+                    if (test)
+                    {
+                        var newArryX = new double[SpeedX.Length + 1];
+                        var newArryY = new double[SpeedX.Length + 1];
+                        Array.Copy(SpeedX, newArryX, cIndex + 1);
+                        newArryX[cIndex + 1] = coordinateX;
+                        Array.Copy(SpeedX, cIndex + 1, newArryX, cIndex + 2, SpeedX.Length - cIndex - 1);
+
+                        Array.Copy(SpeedY, newArryY, cIndex + 1);
+                        newArryY[cIndex + 1] = coordinateY;
+                        Array.Copy(SpeedY, cIndex + 1, newArryY, cIndex + 2, SpeedY.Length - cIndex - 1);
+
+                        SpeedX = newArryX;
+                        SpeedY = newArryY;
+                        ResetSpeed();
+
+                    }
+
+                }
+            };
             cm.Items.Add(CopyImageMenuItem);
 
             MenuItem AutoAxisMenuItem = new() { Header = "Zoom to Fit Data" };
@@ -999,7 +1173,7 @@ namespace Charting
             ColorShowSource = OscillogramChartingCore.ColorHtmls;
             Oscill.Reset();
             Oscill.Crosshair = Oscill.Plot.AddCrosshair(0, 0);
-            Oscill.Plot.XLabel("TimeSpan (min)");
+            Oscill.Plot.XLabel("TimeSpan (max)");
             Oscill.Plot.XAxis.TickLabelFormat(_ => (Math.Round(_ / 60, 1)).ToString());
             Oscill.Plot.YAxis.IsVisible = true;
 
@@ -1017,21 +1191,21 @@ namespace Charting
             yAixsGradient.LabelStyle(fontSize: 13, rotation: 0);
             yAixsGradient.Color(ColorTranslator.FromHtml("#B060B0"));
             yAixsGradient.IsVisible = GradientShow || RealGradientShow;
-            //yAixsGradient.SetSizeLimit(min: 0, max: 110);
+            //yAixsGradient.SetSizeLimit(max: 0, max: 110);
 
             yAixsSpeed = Oscill.Plot.AddAxis(ScottPlot.Renderable.Edge.Right);
             yAixsSpeed.Label("Speed");
             yAixsSpeed.LabelStyle(fontSize: 13, rotation: 0);
             yAixsSpeed.Color(ColorTranslator.FromHtml("#006400"));
             yAixsSpeed.IsVisible = SpeedShow || RealSpeedShow;
-            //yAixsSpeed.SetSizeLimit(min: 0, max: 200);
+            //yAixsSpeed.SetSizeLimit(max: 0, max: 200);
 
             yAixsPressure = Oscill.Plot.AddAxis(ScottPlot.Renderable.Edge.Right);
             yAixsPressure.Label("Pressure");
             yAixsPressure.LabelStyle(fontSize: 13, rotation: 0);
             yAixsPressure.Color(ColorTranslator.FromHtml("#0076F6"));
             yAixsPressure.IsVisible = PressureShow;
-            //yAixsPressure.SetSizeLimit(min: 0, max: 50);
+            //yAixsPressure.SetSizeLimit(max: 0, max: 50);
             //yAixsPressure.SetZoomOutLimit(50);
             //yAixsPressure.SetZoomInLimit(0);
 
@@ -1040,7 +1214,7 @@ namespace Charting
 
             Oscill.DragableLabel = Oscill.Plot.AddTooltip(" ", 0.0, 0.0);
             Oscill.DragableLabel.IsVisible = false;
-            Oscill.DragableLabel.HitTestEnabled = true;
+            Oscill.DragableLabel.HitTestEnabled = false;
 
             //Oscill.RightClicked -= Oscill.DefaultRightClickEvent!;
             //Oscill.RightClicked += Oscill_RightClicked;
@@ -1092,6 +1266,8 @@ namespace Charting
         #region reset lines
         private void ResetEndClockLine()
         {
+            if (scatterrEndTimeLine != null)
+                Oscill.Plot.Remove(scatterrEndTimeLine);
             double CustomSnapFunction(double value)
             {
                 // multiple of 3 between 0 and 50
@@ -1103,6 +1279,7 @@ namespace Charting
             var SnapDisabled = new ScottPlot.SnapLogic.NoSnap1D();
             var SnapCustom = new Custom1D(CustomSnapFunction);
             scatterrEndTimeLine = Oscill.Plot.AddOscillogramVerticalLine(graphType: GraphType.EndClockLine, LastTimeIndex, ColorTranslator.FromHtml("#FB4A3E"), 1.0f);
+            scatterrEndTimeLine.LineWidth = EnableEditDrag ? 3 : 1;
             scatterrEndTimeLine.DragEnabled = EnableEditDrag;
             scatterrEndTimeLine.LineStyle = LineStyle.DashDotDot;
             scatterrEndTimeLine.PositionLabel = true;
@@ -1110,7 +1287,7 @@ namespace Charting
             scatterrEndTimeLine.PositionLabelOppositeAxis = true;
             scatterrEndTimeLine.PositionFormatter = (x) =>
             {
-                return $"TotalTime={(x / 60):F2}min";
+                return $"TotalTime={(x / 60):F1}min";
             };
             scatterrEndTimeLine.DragSnap = new ScottPlot.SnapLogic.Independent2D(SnapCustom, SnapDisabled);
             scatterrEndTimeLine.DragLimitMin = 0;
@@ -1123,59 +1300,65 @@ namespace Charting
 
         Coordinate MoveBetweenAdjacentOscillogramVerticalLine(Coordinate requested)
         {
-            var step = 100;
+            var step = 10;
 
             var speedCount = SpeedX.Count(_ => _ > CurrentTimeIndex + step);
             var gradientCount = GradientX.Count(_ => _ > CurrentTimeIndex + step);
-            var min = speedCount < gradientCount ? speedCount : gradientCount;
+            var max = speedCount < gradientCount ? gradientCount : speedCount;
 
-            Range(SpeedX, step, CurrentTimeIndex, min, ref requested);
-            Range(GradientX, step, CurrentTimeIndex, min, ref requested);
+            Range(SpeedX, step, CurrentTimeIndex, max, ref requested);
+            Range(GradientX, step, CurrentTimeIndex, max, ref requested);
 
-            //LastTimeIndex = (int)requested.X;
+            LastTimeIndex = (int)requested.X;
             return requested;
         }
-        void Range(double[] source, double step, double current, double min, ref Coordinate target)
+        void Range(double[] source, double step, double current, double max, ref Coordinate target)
         {
-            var list= source.ToList();
-            var item = list.FirstOrDefault(_ => _ > current + step);
-            if (item == null!)
+            var list = source.ToList();
+            if (!list.Any(_ => _ > current + step))
                 return;
-            var speedCount = source.Count(_ => _ > current + step);
-            var index=list.IndexOf(item);
-            int addIndex = 1;
-            for ( var i = index-1; i < source.Length; i++)
+            var item = list.First(_ => _ > current + step);
+            var index = list.IndexOf(item) + 1;
+            if (index <= 0 || index >= list.Count)
+                return;
+
+            for (var i = index; i < source.Length; i++)
+                list[i] = list[i - 1] + step;
+
+
+            if (target.X <= (max * step + current))
+                target.X = max * step + current;
+
+            if (target.X < list[list.Count - 1])
             {
-                list[i] = current + step* addIndex++;
+                target.X = list[list.Count - 1];
+                return;
             }
 
-
-            var minSpeedRange = speedCount * step;
-            min = min < speedCount ? min : speedCount;
-
-            if (target.X <= (min * step + current))
-            {
-                target.X = min * step + current;
-            }
             source[source.Length - 1] = target.X;
 
-
-
-
-
-            for (int i = source.Length - 2; i >= source.Length - speedCount; i--)
+            for (int i = list.Count - 2; i >= index; i--)
             {
-                if (source[i] - step <= current + (i - speedCount) * step)
-                    continue;
-                if (i == source.Length - speedCount + 1)
+                if (source[i] > list[i])
                 {
-
+                    if (source[i] < source[i + 1] - step)
+                    { }
+                    else
+                    {
+                        if (source[i + 1] - step > list[i])
+                        {
+                            source[i] = source[i + 1] - step;
+                        }
+                        else
+                        {
+                            source[i] = list[i];
+                        }
+                    }
                 }
-                if (source[i] >= source[i + 1] - step)
+                else
                 {
-                    source[i] = source[i + 1] - step;
+                    source[i] = list[i];
                 }
-
             }
         }
 
@@ -1230,8 +1413,8 @@ namespace Charting
             var scatter = new ScatterPlotLimitDraggable(SpeedX, SpeedY, GraphType.Speed)
             {
                 DragCursor = ScottPlot.Cursor.All,
-                DragEnabled = false,
-                MarkerShape = MarkerShape.none,
+                DragEnabled = EnableEditDrag,
+                MarkerShape = EnableEditDrag ? MarkerShape.filledCircle : MarkerShape.none,
                 Label = $"speed",
                 Color = ColorTranslator.FromHtml("#FFAA25"),
                 LineWidth = 1,
@@ -1244,24 +1427,52 @@ namespace Charting
             };
             scatter.Dragged += Oscill.Tooltip_Dragged;
             // use a custom function to limit the movement of points
-            static Coordinate MoveBetweenAdjacent(List<double> xs, List<double> ys, int index, Coordinate requested)
-            {
-                int leftIndex = Math.Max(index - 1, 0);
-                int rightIndex = Math.Min(index + 1, xs.Count - 1);
 
-                double newX = requested.X;
-                if (xs[leftIndex] > xs[rightIndex])
-                {
-
-                }
-                //newX = Math.Max(newX, xs[leftIndex]);
-                //newX = Math.Min(newX, xs[rightIndex]);
-
-                return new Coordinate(newX, requested.Y);
-            }
             scatter.MovePointFunc = MoveBetweenAdjacent;
             Oscill.Plot.Add(scatter);
             scatterSpeed = scatter;
+        }
+        Coordinate MoveBetweenAdjacent(List<double> xs, List<double> ys, int index, Coordinate requested)
+        {
+            int leftIndex = Math.Max(index - 1, 0);
+            int rightIndex = Math.Min(index + 1, xs.Count - 1);
+
+            double newX = requested.X;
+            if (IntervalAdjustEnable)
+            {
+                newX = Math.Max(newX, xs[leftIndex]);
+                newX = Math.Min(newX, xs[rightIndex]);
+            }
+            else if (AutoRightAdjustEnable)
+            {
+                newX = Math.Max(newX, xs[leftIndex]);
+                newX = Math.Min(newX, xs[rightIndex]);
+
+                var current = xs[index];
+                var r = newX - current;
+                if (DragType == GraphType.Speed)
+                {
+                    for (int i = index + 1; i < SpeedX.Length - 1; i++)
+                    {
+                        if (SpeedX[i] + r > LastTimeIndex)
+                            SpeedX[i] = LastTimeIndex;
+                        else
+                            SpeedX[i] += r;
+                    }
+                }
+                else if (DragType == GraphType.Gradient)
+                {
+                    for (int i = index + 1; i < GradientX.Length - 1; i++)
+                    {
+                        if (GradientX[i] + r > LastTimeIndex)
+                            GradientX[i] = LastTimeIndex;
+                        else
+                            GradientX[i] += r;
+                    }
+                }
+            }
+
+            return new Coordinate(newX, requested.Y);
         }
         /// <summary>
         /// 实时速度线
@@ -1311,10 +1522,10 @@ namespace Charting
             var scatter = new ScatterPlotLimitDraggable(GradientX, GradientY, GraphType.Gradient)
             {
                 DragCursor = ScottPlot.Cursor.All,
-                DragEnabled = false,
+                DragEnabled = EnableEditDrag,
                 DragEnabledX = true,
                 DragEnabledY = true,
-                MarkerShape = MarkerShape.none,
+                MarkerShape = EnableEditDrag? MarkerShape.filledCircle: MarkerShape.none,
                 Label = $"gradient",
                 Color = ColorTranslator.FromHtml("#B060B0"),
                 LineWidth = 1,
@@ -1330,20 +1541,6 @@ namespace Charting
             scatter.MovePointFunc = MoveBetweenAdjacent;
             Oscill.Plot.Add(scatter);
             scatterGradient = scatter;
-
-            var kk = Oscill.Plot.GetPlottables();
-            // use a custom function to limit the movement of points
-            static Coordinate MoveBetweenAdjacent(List<double> xs, List<double> ys, int index, Coordinate requested)
-            {
-                int leftIndex = Math.Max(index - 1, 0);
-                int rightIndex = Math.Min(index + 1, xs.Count - 1);
-
-                double newX = requested.X;
-                //newX = Math.Max(newX, xs[leftIndex]);
-                //newX = Math.Min(newX, xs[rightIndex]);
-
-                return new Coordinate(newX, requested.Y);
-            }
         }
 
 

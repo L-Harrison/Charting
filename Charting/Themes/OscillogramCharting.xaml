@@ -17,6 +17,8 @@
         <Setter Property="LastTimeIndex" Value="59" />
         <Setter Property="CurrentTimeIndex" Value="0" />
         <Setter Property="GradientNum" Value="1280" />
+        <Setter Property="AutoRightAdjustEnable" Value="True" />
+        <Setter Property="IntervalAdjustEnable" Value="False" />
         <Setter Property="SpeedNum" Value="1280" />
         <Setter Property="DragX" Value="0" />
         <Setter Property="DragY" Value="0" />
@@ -33,9 +35,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Height="40"
-                                    Background="{StaticResource ToolBar_Background}"
-                                    Orientation="Horizontal">
+                        <StackPanel Height="40" Background="{StaticResource ToolBar_Background}" Orientation="Horizontal">
                             <ToggleButton Name="Part_Edit" Width="80" Height="30"
                                           Margin="5,0,0,0" Content="DragEdit"
                                           IsChecked="{TemplateBinding EnableEditDrag}">
@@ -91,11 +91,11 @@
                                         </Style>
                                     </StackPanel.Style>
                                     <RadioButton Name="Part_DragAutoAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
-                                                 Content="AutoAgjust" GroupName="DragEdit"
-                                                 IsChecked="{TemplateBinding EnableEditDrag}" />
+                                                 Content="AutoRightAgjust" GroupName="DragEdit"
+                                                 IsChecked="{Binding AutoRightAdjustEnable, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
                                     <RadioButton Name="Part_DragIntervalAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
                                                  Content="IntervalAgjust" GroupName="DragEdit"
-                                                 IsChecked="{TemplateBinding EnableEditDrag}" />
+                                                 IsChecked="{Binding IntervalAdjustEnable, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
                                     <!--<TextBlock Width="50" Margin="15,0,0,0"
                                                Text="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />-->
                                     <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
@@ -152,15 +152,12 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Rectangle Width="10" Height="10" Margin="5,0"
-                                               Fill="{Binding}" />
+                                    <Rectangle Width="10" Height="10" Margin="5,0" Fill="{Binding}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <!--#endregion-->
-                        <StackPanel Grid.Column="1" Height="40"
-                                    Background="{StaticResource ToolBar_Background}"
-                                    Orientation="Horizontal">
+                        <StackPanel Grid.Column="1" Height="40" Background="{StaticResource ToolBar_Background}" Orientation="Horizontal">
 
                             <ToggleButton Name="Part_Gradient" Height="30" Margin="5,0,0,0"
                                           Content="Gra"
@@ -233,10 +230,7 @@
                                                             BorderBrush="{TemplateBinding BorderBrush}"
                                                             BorderThickness="{TemplateBinding BorderThickness}"
                                                             CornerRadius="5" SnapsToDevicePixels="true">
-                                                        <ContentPresenter x:Name="ContentPresenter"
-                                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                        <ContentPresenter x:Name="ContentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
@@ -276,8 +270,7 @@
                                 </ListView.ItemTemplate>
                             </ListView>
                         </StackPanel>
-                        <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="LightGray"
-                                BorderThickness="0,1,0,0">
+                        <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="LightGray" BorderThickness="0,1,0,0">
                             <local:OscillogramChartingCore x:Name="Part_OscillogramChartingCore" />
                         </Border>
 
