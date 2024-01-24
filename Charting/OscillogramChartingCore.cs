@@ -60,10 +60,10 @@ namespace Charting
         private readonly ControlBackEnd Backend;
         private readonly Dictionary<Cursor, System.Windows.Input.Cursor> Cursors;
 
+        private System.Windows.Controls.Image PlotImage;
         private WriteableBitmap PlotBitmap;
         private float ScaledWidth => (float)(ActualWidth * Configuration.DpiStretchRatio);
         private float ScaledHeight => (float)(ActualHeight * Configuration.DpiStretchRatio);
-
 
         //53种颜色
         public static List<string> ColorHtmls = new List<string>() {
@@ -131,103 +131,107 @@ namespace Charting
 
             "#FF00FF",
         };
-
         internal bool AutoZoom { set; get; } = true;
-
-        private System.Windows.Controls.Image PlotImage;
         internal bool isHighRefresh = false;
 
-
         #region Draggable
-        /// <summary>
-        /// 是否存在可拖动的
-        /// </summary>
-        internal EventHandler<DraggableGraphContext> HasDraggable { get; set; }
-
-
+        internal EventHandler<DraggableGraphContext> DraggableUpdatedHandler { get; set; }
         internal DraggableGraphContext CurrentDraggableGraph
         {
             get { return (DraggableGraphContext)GetValue(CurrentDraggableGraphProperty); }
             set { SetValue(CurrentDraggableGraphProperty, value); }
         }
-
         // Using a DependencyProperty as the backing store for CurrentDraggableGraph.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty CurrentDraggableGraphProperty =
             DependencyProperty.Register("CurrentDraggableGraph", typeof(DraggableGraphContext), typeof(OscillogramChartingCore), new PropertyMetadata(new DraggableGraphContext()));
-
-        private void UpdateDraggable(IDraggable? dr)
+        public Tooltip DragableTip
         {
-            if (dr == null) return;
-            if (dr.DragEnabled)
-            {
+            get { return (Tooltip)GetValue(DragableTipProperty); }
+            set { SetValue(DragableTipProperty, value); }
+        }
+        // Using a DependencyProperty as the backing store for DragableTip.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty DragableTipProperty =
+            DependencyProperty.Register("DragableTip", typeof(Tooltip), typeof(OscillogramChartingCore), new PropertyMetadata(new Tooltip()));
+        public EventHandler<(double X, double Y, IDraggable)> Dragped;
+        internal void Tooltip_Dragged(object? sender, EventArgs e)
+        {
 
-                if (CurrentDraggableGraph.DraggableGraph.Contains(dr))
-                    CurrentDraggableGraph.DraggableGraph.Remove(dr);
-                if (CurrentDraggableGraph.CurrentDraggableGraph == dr)
-                {
-                    CurrentDraggableGraph.CurrentDraggableGraph = null!;
-                    CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
-                }
-            }
-            else
+            if (sender is OscillogramDraggable ps)
             {
-                if (!CurrentDraggableGraph.DraggableGraph.Contains(dr))
-                    CurrentDraggableGraph.DraggableGraph.Add(dr);
-                if (CurrentDraggableGraph.CurrentDraggableGraph != dr)
-                {
-                    CurrentDraggableGraph.CurrentDraggableGraph = dr!;
-                    if (dr is IGraphType graphType)
-                        CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
-                    else
-                        CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
-                }
-            }
-            if (dr is ScatterPlot scatterPlot)
-            {
-                if (dr.DragEnabled)
-                {
-                    scatterPlot.MarkerShape = MarkerShape.none;
-                    dr.DragEnabled = false;
-                    DragableLabel.IsVisible = false;
-                }
-                else
-                {
-                    scatterPlot.MarkerShape = MarkerShape.filledCircle;
-                    dr.DragEnabled = true;
-                    DragableLabel.IsVisible = true;
-                }
-            }
-            else if (dr is OscillogramVLine vLine)
-            {
-                if (dr.DragEnabled)
-                {
-                    vLine.LineWidth = 1;
-                    dr.DragEnabled = false;
-                }
-                else
-                {
-                    vLine.LineWidth = 3;
-                    dr.DragEnabled = true;
-                }
-            }
-            else
-            {
+                var xs = ps.Xs;
+                var ys = ps.Ys;
+                var index = ps.CurrentIndex;
 
+                int leftIndex = Math.Max(index - 1, 0);
+                int rightIndex = Math.Min(index + 1, xs.Count() - 1);
+
+                var point = Mouse.GetPosition(this);
+                (double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
+
+                //var pixelX = e.MouseDevice.GetPosition(this).X;
+                //var pixelY = e.MouseDevice.GetPosition(this).Y;
+                //var ke = Plot.GetCoordinate((float)pixelX, (float)pixelY, 0, 0);
+                //(double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
+
+                DragableTip.IsVisible = true;
+                DragableTip.X = coordinateX + 30;
+                DragableTip.Y = coordinateY;
+                DragableTip.Label = $"x:{ps.Xs[ps.CurrentIndex]:f2} \r\ny:{ps.Ys[ps.CurrentIndex]:f2}";
+                DragableTip.BorderWidth = 0;
+
+                if (ps is IDraggable dr)
+                {
+                    if (!CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                    {
+                        CurrentDraggableGraph.DraggableGraph.Add(dr);
+                    }
+                    if (CurrentDraggableGraph.CurrentDraggableGraph != dr)
+                    {
+                        CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                        if (dr is IGraphType graphType)
+                            CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                        else
+                            CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                    }
+                }
+
+                Dragped?.Invoke(sender, (Math.Round(ps.Xs[ps.CurrentIndex], 3), Math.Round(ps.Ys[ps.CurrentIndex], 3), CurrentDraggableGraph.CurrentDraggableGraph));
+                //currentXYLabel.ArrowSize = 20;
             }
 
         }
 
-
-        public Tooltip DragableLabel
+        internal IDraggable GetDraggable(double xPixel, double yPixel, int snapDistancePixels = 5)
         {
-            get { return (Tooltip)GetValue(DragableLabelProperty); }
-            set { SetValue(DragableLabelProperty, value); }
+            var settings = Plot.GetSettings();
+            IDraggable[] enabledDraggables = settings.Plottables
+                                  .Where(x => x is IDraggable)
+                                  .Select(x => (IDraggable)x)
+                                  //.Where(x => x.DragEnabled)
+                                  .Where(x => x is IPlottable p && p.IsVisible)
+                                  .ToArray();
+
+            foreach (IDraggable draggable in enabledDraggables)
+            {
+                int xAxisIndex = ((IPlottable)draggable).XAxisIndex;
+                int yAxisIndex = ((IPlottable)draggable).YAxisIndex;
+                double xUnitsPerPx = settings.GetXAxis(xAxisIndex).Dims.UnitsPerPx;
+                double yUnitsPerPx = settings.GetYAxis(yAxisIndex).Dims.UnitsPerPx;
+
+                double snapWidth = xUnitsPerPx * snapDistancePixels;
+                double snapHeight = yUnitsPerPx * snapDistancePixels;
+                //double xCoords = GetCoordinateX((float)xPixel, xAxisIndex);
+                //double yCoords = GetCoordinateY((float)yPixel, yAxisIndex);
+
+                double xCoords = settings.GetXAxis(xAxisIndex).Dims.GetUnit((float)xPixel);
+                double yCoords = settings.GetYAxis(yAxisIndex).Dims.GetUnit((float)yPixel);
+                if (draggable.IsUnderMouse(xCoords, yCoords, snapWidth, snapHeight))
+                    return draggable;
+            }
+
+            return null!;
         }
-        // Using a DependencyProperty as the backing store for DragableLabel.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty DragableLabelProperty =
-            DependencyProperty.Register("DragableLabel", typeof(Tooltip), typeof(OscillogramChartingCore), new PropertyMetadata(new Tooltip()));
         #endregion
-
 
         #region Crosshair
         public Crosshair Crosshair
@@ -327,13 +331,10 @@ namespace Charting
             Configuration = Backend.Configuration;
 
             //Configuration.Quality = ScottPlot.Control.QualityMode.Low;
-
             //Configuration.DpiStretch = false;
             //Configuration.DpiStretchRatio =.9f;
 
-            //Backend.Plot.Layout(left: -100, right: -100, bottom: -100, top: -50);
             Backend.Plot.Layout(0, 0, 0, 0, 0);
-
 
             if (DesignerProperties.GetIsInDesignMode(this))
             {
@@ -371,8 +372,8 @@ namespace Charting
             //ErrorLabel.Visibility = System.Windows.Visibility.Hidden;
             Backend.StartProcessingEvents();
 
-
             Crosshair = Backend.Plot.AddCrosshair(0, 0);
+
 
         }
 
@@ -545,8 +546,12 @@ namespace Charting
         public void DefaultRightClickEvent(object sender, EventArgs e)
         {
             if (Menus != null)
+            {
+                Menus = ContextMenuPreviousExcute(Menus);
                 Menus.IsOpen = true;
+            }
         }
+        public Func<ContextMenu, ContextMenu> ContextMenuPreviousExcute { get; set; } = (moveTo) => moveTo;
         private void RightClickMenu_Copy_Click(object sender, EventArgs e) => System.Windows.Clipboard.SetImage(BmpImageFromBmp(Plot.Render()));
         //private void RightClickMenu_Help_Click(object sender, EventArgs e) => new WPF.HelpWindow().Show();
         //private void RightClickMenu_OpenInNewWindow_Click(object sender, EventArgs e) => new WpfPlotViewer(Plot).Show();
@@ -572,77 +577,10 @@ namespace Charting
         }
         #endregion
 
-
-        internal IDraggable GetDraggable(double xPixel, double yPixel, int snapDistancePixels = 5)
-        {
-            var settings = Plot.GetSettings();
-            IDraggable[] enabledDraggables = settings.Plottables
-                                  .Where(x => x is IDraggable)
-                                  .Select(x => (IDraggable)x)
-                                  //.Where(x => x.DragEnabled)
-                                  .Where(x => x is IPlottable p && p.IsVisible)
-                                  .ToArray();
-
-            foreach (IDraggable draggable in enabledDraggables)
-            {
-                int xAxisIndex = ((IPlottable)draggable).XAxisIndex;
-                int yAxisIndex = ((IPlottable)draggable).YAxisIndex;
-                double xUnitsPerPx = settings.GetXAxis(xAxisIndex).Dims.UnitsPerPx;
-                double yUnitsPerPx = settings.GetYAxis(yAxisIndex).Dims.UnitsPerPx;
-
-                double snapWidth = xUnitsPerPx * snapDistancePixels;
-                double snapHeight = yUnitsPerPx * snapDistancePixels;
-                //double xCoords = GetCoordinateX((float)xPixel, xAxisIndex);
-                //double yCoords = GetCoordinateY((float)yPixel, yAxisIndex);
-
-                double xCoords = settings.GetXAxis(xAxisIndex).Dims.GetUnit((float)xPixel);
-                double yCoords = settings.GetYAxis(yAxisIndex).Dims.GetUnit((float)yPixel);
-                if (draggable.IsUnderMouse(xCoords, yCoords, snapWidth, snapHeight))
-                    return draggable;
-            }
-
-            return null!;
-        }
-        internal IDraggable[] GetDraggables()
-        {
-            var settings = Plot.GetSettings();
-            IDraggable[] enabledDraggables = settings.Plottables
-                                  .Where(x => x is IDraggable)
-                                  .Select(x => (IDraggable)x)
-                                  //.Where(x => x.DragEnabled)
-                                  .Where(x => x is IPlottable p && p.IsVisible)
-                                  .ToArray();
-
-            return enabledDraggables;
-        }
-
+        #region OnApplyTemplate
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            if (GetTemplateChild(GradientName) is ToggleButton toggleButton)
-            {
-
-            }
-            if (GetTemplateChild(RealGradientName) is ToggleButton toggleButton1)
-            {
-
-            }
-            if (GetTemplateChild(PressureName) is ToggleButton toggleButton3)
-            {
-
-            }
-            if (GetTemplateChild(SpeedName) is ToggleButton toggleButton4)
-            {
-
-            }
-            if (GetTemplateChild(RealSpeedName) is ToggleButton toggleButton5)
-            {
-
-            }
-            if (GetTemplateChild(GraphName) is ListView itemsControl)
-            {
-
-            }
             if (GetTemplateChild(PlotImageName) is Image contentControl)
             {
                 PlotImage = contentControl;
@@ -707,7 +645,7 @@ namespace Charting
                 };
                 contentControl.MouseUp += (sender, e) =>
                 {
-                    //DragableLabel.IsVisible = false;
+                    //DragableTip.IsVisible = false;
                     Backend.MouseUp(GetInputState(e));
                     ReleaseMouseCapture();
                 };
@@ -757,7 +695,7 @@ namespace Charting
                         var ht = Plot.GetHittable(pixelX, pixelY);
                         if (ht != null)
                         {
-                            if (ht == DragableLabel && ht.IsVisible)
+                            if (ht == DragableTip && ht.IsVisible)
                             {
                                 return;
                             }
@@ -766,11 +704,11 @@ namespace Charting
                         {
                             UpdateDraggable(dr!);
                         }
-                        HasDraggable?.Invoke(sender, CurrentDraggableGraph);
+                        DraggableUpdatedHandler?.Invoke(sender, CurrentDraggableGraph);
                     }
                     else
                     {
-                        HasDraggable?.Invoke(sender, CurrentDraggableGraph);
+                        DraggableUpdatedHandler?.Invoke(sender, CurrentDraggableGraph);
 
                     }
                 };
@@ -778,87 +716,75 @@ namespace Charting
             }
             if (GetTemplateChild(MarinGName) is Grid grid)
             {
-                MarinGEvent(grid);
+                grid.SizeChanged += (sender, e) =>
+                   Backend.Resize(ScaledWidth, ScaledHeight, useDelayedRendering: true);
             }
         }
-
-        public virtual void MarinGEvent(Grid grid)
+        private void UpdateDraggable(IDraggable? dr)
         {
-            grid.SizeChanged += (sender, e) =>
-                Backend.Resize(ScaledWidth, ScaledHeight, useDelayedRendering: true);
-        }
-
-
-        internal IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
-        {
-            if (depObj == null)
+            if (dr == null) return;
+            if (dr.DragEnabled)
             {
-                yield break;
-            }
 
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
-            {
-                DependencyObject child = VisualTreeHelper.GetChild(depObj, i);
-                T val = (child as T)!;
-                if (val != null)
+                if (CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                    CurrentDraggableGraph.DraggableGraph.Remove(dr);
+                if (CurrentDraggableGraph.CurrentDraggableGraph == dr)
                 {
-                    yield return val;
-                }
-
-                foreach (T item in FindVisualChildren<T>(child))
-                {
-                    yield return item;
+                    CurrentDraggableGraph.CurrentDraggableGraph = null!;
+                    CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
                 }
             }
-        }
-        internal void Tooltip_Dragged(object? sender, EventArgs e)
-        {
-
-            if (sender is ScatterPlotLimitDraggable ps)
+            else
             {
-                var xs = ps.Xs;
-                var ys = ps.Ys;
-                var index = ps.CurrentIndex;
-
-                int leftIndex = Math.Max(index - 1, 0);
-                int rightIndex = Math.Min(index + 1, xs.Count() - 1);
-
-                var point = Mouse.GetPosition(this);
-                (double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
-
-                //var pixelX = e.MouseDevice.GetPosition(this).X;
-                //var pixelY = e.MouseDevice.GetPosition(this).Y;
-                //var ke = Plot.GetCoordinate((float)pixelX, (float)pixelY, 0, 0);
-                //(double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
-
-                DragableLabel.IsVisible = true;
-                DragableLabel.X = coordinateX + 30;
-                DragableLabel.Y = coordinateY;
-                DragableLabel.Label = $"x:{ps.Xs[ps.CurrentIndex]:f2} \r\ny:{ps.Ys[ps.CurrentIndex]:f2}";
-                DragableLabel.BorderWidth = 0;
-
-                if (ps is IDraggable dr)
+                if (!CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                    CurrentDraggableGraph.DraggableGraph.Add(dr);
+                if (CurrentDraggableGraph.CurrentDraggableGraph != dr)
                 {
-                    if (!CurrentDraggableGraph.DraggableGraph.Contains(dr))
-                    {
-                        CurrentDraggableGraph.DraggableGraph.Add(dr);
-                    }
-                    if (CurrentDraggableGraph.CurrentDraggableGraph != dr)
-                    {
-                        CurrentDraggableGraph.CurrentDraggableGraph = dr!;
-                        if (dr is IGraphType graphType)
-                            CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
-                        else
-                            CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
-                    }
+                    CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                    if (dr is IGraphType graphType)
+                        CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                    else
+                        CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
                 }
+            }
+            if (dr is ScatterPlot scatterPlot)
+            {
+                if (dr.DragEnabled)
+                {
+                    scatterPlot.MarkerShape = MarkerShape.none;
+                    dr.DragEnabled = false;
+                    DragableTip.IsVisible = false;
+                }
+                else
+                {
+                    scatterPlot.MarkerShape = MarkerShape.filledCircle;
+                    dr.DragEnabled = true;
+                    DragableTip.IsVisible = true;
+                }
+            }
+            else if (dr is OscillogramVLine vLine)
+            {
+                if (dr.DragEnabled)
+                {
+                    vLine.LineWidth = 1;
+                    dr.DragEnabled = false;
+                }
+                else
+                {
+                    vLine.LineWidth = 3;
+                    dr.DragEnabled = true;
+                }
+            }
+            else
+            {
 
-                Dragped?.Invoke(sender, (Math.Round(ps.Xs[ps.CurrentIndex], 3), Math.Round(ps.Ys[ps.CurrentIndex], 3), CurrentDraggableGraph.CurrentDraggableGraph));
-                //currentXYLabel.ArrowSize = 20;
             }
 
         }
-        public EventHandler<(double X, double Y, IDraggable)> Dragped;
+
+        #endregion
+
+
 
     }
 }

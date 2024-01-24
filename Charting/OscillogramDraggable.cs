@@ -16,7 +16,7 @@ namespace Charting
     /// The scatter plot renders Y/Y pairs as points and/or connected lines.
     /// Scatter plots can be extremely slow for large datasets, so use Signal plots in these situations.
     /// </summary>
-    public class ScatterPlotLimitDraggable : ScatterPlot, IDraggable, IGraphType
+    public class OscillogramDraggable : ScatterPlot, IDraggable, IGraphType
     {
         public int CurrentIndex { get; set; } = 0;
 
@@ -132,7 +132,7 @@ namespace Charting
             return test;
         }
 
-        public ScatterPlotLimitDraggable(double[] xs, double[] ys, GraphType graphType, double[] errorX = null, double[] errorY = null) : base(xs, ys, errorX, errorY)
+        public OscillogramDraggable(double[] xs, double[] ys, GraphType graphType, double[] errorX = null, double[] errorY = null) : base(xs, ys, errorX, errorY)
         {
             GraphType = graphType;
         }

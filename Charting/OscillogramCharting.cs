@@ -1,4 +1,5 @@
-﻿using Charting.Extensions;
+﻿using Charting.Converters;
+using Charting.Extensions;
 using Charting.Models;
 
 using Microsoft.Win32;
@@ -54,6 +55,7 @@ namespace Charting
         /// 超过点数将不在刷新新增图
         /// </summary>
         public const int AllNumConst = 86400;
+        private const double hitTestStep = 10;
 
 
         private System.Windows.Threading.DispatcherTimer _updateDataTimer;
@@ -135,7 +137,7 @@ namespace Charting
         private static void OnDragXChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var dr = ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph;
-            if (dr != null && dr is ScatterPlotLimitDraggable tb)
+            if (dr != null && dr is OscillogramDraggable tb)
             {
                 int leftIndex = Math.Max(tb.CurrentIndex - 1, 0);
                 int rightIndex = Math.Min(tb.CurrentIndex + 1, tb.Xs.Length - 1);
@@ -145,10 +147,10 @@ namespace Charting
                 tb.Xs[tb.CurrentIndex] = newX;
 
                 //(double coordinateX, double coordinateY) = ((OscillogramCharting)d).Oscill.GetMouseCoordinates(0, 0);
-                //((OscillogramCharting)d).Oscill.DragableLabel.X = coordinateX + 30;
-                //((OscillogramCharting)d).Oscill.DragableLabel.Y = coordinateY;
+                //((OscillogramCharting)d).Oscill.DragableTip.X = coordinateX + 30;
+                //((OscillogramCharting)d).Oscill.DragableTip.Y = coordinateY;
 
-                //((OscillogramCharting)d).Oscill. DragableLabel.Label = $"x:{tb.Xs[tb.cIndex]:f2} \r\ny:{tb.Ys[tb.cIndex]:f2}";
+                //((OscillogramCharting)d).Oscill. DragableTip.Label = $"x:{tb.Xs[tb.cIndex]:f2} \r\ny:{tb.Ys[tb.cIndex]:f2}";
             }
         }
 
@@ -165,14 +167,14 @@ namespace Charting
         private static void OnDragYChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var dr = ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph;
-            if (dr != null && dr is ScatterPlotLimitDraggable tb)
+            if (dr != null && dr is OscillogramDraggable tb)
             {
                 tb.Ys[tb.CurrentIndex] = (double)e.NewValue;
                 //(double coordinateX, double coordinateY) = ((OscillogramCharting)d).Oscill.GetMouseCoordinates(0, 0);
-                //((OscillogramCharting)d).Oscill.DragableLabel.X = coordinateX + 30;
-                //((OscillogramCharting)d).Oscill.DragableLabel.Y = coordinateY;
+                //((OscillogramCharting)d).Oscill.DragableTip.X = coordinateX + 30;
+                //((OscillogramCharting)d).Oscill.DragableTip.Y = coordinateY;
 
-                //((OscillogramCharting)d).Oscill.DragableLabel.Label = $"x:{tb.Xs[tb.cIndex]:f2} \r\ny:{tb.Ys[tb.cIndex]:f2}";
+                //((OscillogramCharting)d).Oscill.DragableTip.Label = $"x:{tb.Xs[tb.cIndex]:f2} \r\ny:{tb.Ys[tb.cIndex]:f2}";
             }
         }
 
@@ -192,7 +194,7 @@ namespace Charting
             var settings = ((OscillogramCharting)d).Oscill.Plot.GetSettings();
             if (!(bool)e.NewValue)
             {
-                //((OscillogramCharting)d).Oscill.DragableLabel.IsVisible = false;
+                //((OscillogramCharting)d).Oscill.DragableTip.IsVisible = false;
                 //((OscillogramCharting)d).scatterrEndTimeLine.IsVisible = false;
                 //((OscillogramCharting)d).scatterrEndTimeLine.DragEnabled = false;
 
@@ -265,86 +267,12 @@ namespace Charting
         {
             var cm = new ContextMenu();
 
-            MenuItem SaveImageMenuItem = new() { Header = "Add" };
+            MenuItem SaveImageMenuItem = new() { Header = "Add", Name = "Drag_Add" };
             SaveImageMenuItem.Click += (sender, e) =>
             {
                 var pixelX = Mouse.GetPosition(this).X;
                 var pixelY = Mouse.GetPosition(this).Y;
-            
-                if (DragType ==GraphType.Gradient)
-                {
-                    (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatterGradient?.YAxisIndex??0);
-                    bool test = false;
-                    var cIndex = 0;
-                    for (int i = 0; i < GradientX.Length-1; i++)
-                    {
-                        if (coordinateX- GradientX[i]>=0&& GradientX[i+1]> coordinateX)
-                        {
-                            cIndex = i;
-                            test =true;
-                            break;
-                        }
-                    }
-                    if (test)
-                    {
-                        var newArryX = new double[GradientX.Length + 1];
-                        var newArryY = new double[GradientX.Length + 1];
-                        Array.Copy(GradientX, newArryX, cIndex + 1);
-                        newArryX[cIndex+1]= coordinateX;
-                        Array.Copy(GradientX, cIndex + 1, newArryX, cIndex + 2, GradientX.Length- cIndex - 1);
 
-                        Array.Copy(GradientY, newArryY, cIndex + 1);
-                        newArryY[cIndex + 1] = coordinateY;
-                        Array.Copy(GradientY, cIndex + 1, newArryY, cIndex + 2, GradientY.Length - cIndex - 1);
-
-                        GradientX = newArryX;
-                        GradientY = newArryY;
-                        ResetGradient();
-
-                    }
-                    
-                }
-
-                if (DragType == GraphType.Speed)
-                {
-                    (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatterSpeed?.YAxisIndex??0);
-                    bool test = false;
-                    var cIndex = 0;
-                    for (int i = 0; i < SpeedX.Length - 1; i++)
-                    {
-                        if (coordinateX - SpeedX[i] >= 0 && SpeedX[i + 1] > coordinateX)
-                        {
-                            cIndex = i;
-                            test = true;
-                            break;
-                        }
-                    }
-                    if (test)
-                    {
-                        var newArryX = new double[SpeedX.Length + 1];
-                        var newArryY = new double[SpeedX.Length + 1];
-                        Array.Copy(SpeedX, newArryX, cIndex + 1);
-                        newArryX[cIndex + 1] = coordinateX;
-                        Array.Copy(SpeedX, cIndex + 1, newArryX, cIndex + 2, SpeedX.Length - cIndex - 1);
-
-                        Array.Copy(SpeedY, newArryY, cIndex + 1);
-                        newArryY[cIndex + 1] = coordinateY;
-                        Array.Copy(SpeedY, cIndex + 1, newArryY, cIndex + 2, SpeedY.Length - cIndex - 1);
-
-                        SpeedX = newArryX;
-                        SpeedY = newArryY;
-                        ResetSpeed();
-
-                    }
-
-                }
-
-            };
-            cm.Items.Add(SaveImageMenuItem);
-
-            MenuItem CopyImageMenuItem = new() { Header = "Remove" };
-            CopyImageMenuItem.Click += (sender, e) =>
-            {
                 if (DragType == GraphType.Gradient)
                 {
                     (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatterGradient?.YAxisIndex ?? 0);
@@ -412,6 +340,56 @@ namespace Charting
                     }
 
                 }
+
+            };
+            cm.Items.Add(SaveImageMenuItem);
+
+            MenuItem CopyImageMenuItem = new()
+            {
+                Header = "Remove",
+                Name = "Drag_Remove"
+                //IsEnabled = GraphType.Gradient == DragType || GraphType.Speed == DragType ? true : false
+            };
+
+
+            CopyImageMenuItem.Click += (sender, e) =>
+            {
+
+                var scatter = GraphType.Gradient == DragType ? scatterGradient : GraphType.Speed == DragType ? scatterSpeed : null;
+                var xs = GraphType.Gradient == DragType ? GradientX : GraphType.Speed == DragType ? SpeedX : null;
+                var ys = GraphType.Gradient == DragType ? GradientY : GraphType.Speed == DragType ? GradientY : null;
+                if (scatter != null && scatter is OscillogramDraggable dr)
+                {
+                    (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatter.YAxisIndex);
+                    var cIndex = dr.CurrentIndex+1;
+                    var newArryX = new double[xs.Length - 1];
+                    var newArryY = new double[xs.Length - 1];
+
+                    if (GraphType.Gradient == DragType)
+                    {
+                        Array.Copy(GradientX, newArryX, cIndex - 1);
+                        Array.Copy(GradientX, cIndex , newArryX, cIndex-1, GradientX.Length - cIndex) ;
+
+                        Array.Copy(GradientY, newArryY, cIndex - 1);
+                        Array.Copy(GradientY, cIndex , newArryY, cIndex-1, GradientY.Length - cIndex );
+
+                        GradientX = newArryX;
+                        GradientY = newArryY;
+                        ResetGradient();
+                    }
+                    if (GraphType.Speed == DragType)
+                    {
+                        Array.Copy(SpeedX, newArryX, cIndex - 1);
+                        Array.Copy(SpeedX, cIndex, newArryX, cIndex - 1, SpeedX.Length - cIndex );
+
+                        Array.Copy(SpeedY, newArryY, cIndex - 1);
+                        Array.Copy(SpeedY, cIndex , newArryY, cIndex-1, SpeedY.Length - cIndex);
+
+                        SpeedX = newArryX;
+                        SpeedY = newArryY;
+                        ResetSpeed();
+                    }
+                }
             };
             cm.Items.Add(CopyImageMenuItem);
 
@@ -436,7 +414,6 @@ namespace Charting
 
             Oscill.Menus = cm!;
         }
-
         /// <summary>
         /// 当前时间索引位
         /// </summary>
@@ -449,7 +426,6 @@ namespace Charting
         public static readonly DependencyProperty CurrentTimeIndexProperty =
             DependencyProperty.Register("CurrentTimeIndex", typeof(int), typeof(OscillogramCharting), new PropertyMetadata(0));
 
-
         /// <summary>
         /// 最后时间索引位
         /// </summary>
@@ -458,7 +434,6 @@ namespace Charting
             get { return (int)GetValue(LastTimeIndexProperty); }
             set { SetValue(LastTimeIndexProperty, value); }
         }
-
         // Using a DependencyProperty as the backing store for LastTimeIndex.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty LastTimeIndexProperty =
             DependencyProperty.Register("LastTimeIndex", typeof(int), typeof(OscillogramCharting), new PropertyMetadata(59, OnLastTimeIndexChanged));
@@ -477,7 +452,6 @@ namespace Charting
 
         }
 
-
         /// <summary>
         /// 梯度点数
         /// </summary>
@@ -491,7 +465,6 @@ namespace Charting
         public static readonly DependencyProperty GradientNumProperty =
             DependencyProperty.Register("GradientNum", typeof(int), typeof(OscillogramCharting), new PropertyMetadata(1280));
 
-
         /// <summary>
         /// 速度点数
         /// </summary>
@@ -504,8 +477,6 @@ namespace Charting
         // Using a DependencyProperty as the backing store for SpeedNum.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty SpeedNumProperty =
             DependencyProperty.Register("SpeedNum", typeof(int), typeof(OscillogramCharting), new PropertyMetadata(1280));
-
-
 
         #endregion
 
@@ -960,6 +931,7 @@ namespace Charting
         private OscillogramVLine? scatterrEndTimeLine = null!;
         #endregion
 
+        #region Ctor
         static OscillogramCharting()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(OscillogramCharting), new FrameworkPropertyMetadata(typeof(OscillogramCharting)));
@@ -1001,121 +973,15 @@ namespace Charting
             // create a timer to update the GUI
             _renderTimer = new DispatcherTimer();
             _renderTimer.Interval = TimeSpan.FromMilliseconds(20);
-            _renderTimer.Tick += (sender, e) => Oscill?.AutoRender(Oscill.isHighRefresh);
+            _renderTimer.Tick += (sender, e) => Oscill?.AutoRender(/*Oscill.isHighRefresh*/);
             _renderTimer.Start();
 
-        }
 
-        #region virtual
-        public virtual void GradientEvent(ToggleButton toggleButton)
-        {
-            toggleButton.Checked += (sender, e) =>
-            {
-                if (!GradientShow)
-                    GradientShow = true;
-            };
-            toggleButton.Unchecked += (sender, e) =>
-            {
-                if (GradientShow)
-                    GradientShow = false;
-            };
-        }
-        public virtual void RealGradientEvent(ToggleButton toggleButton)
-        {
-            toggleButton.Checked += (sender, e) =>
-            {
-                if (!RealGradientShow)
-                    RealGradientShow = true;
-            };
-            toggleButton.Unchecked += (sender, e) =>
-            {
-                if (RealGradientShow)
-                    RealGradientShow = false;
-            };
-        }
-        public virtual void PressureEvent(ToggleButton toggleButton)
-        {
-            toggleButton.Checked += (sender, e) =>
-            {
-                if (!PressureShow)
-                    PressureShow = true;
-            };
-            toggleButton.Unchecked += (sender, e) =>
-            {
-                if (PressureShow)
-                    PressureShow = false;
-            };
-        }
-        public virtual void SpeedEvent(ToggleButton toggleButton)
-        {
-            toggleButton.Checked += (sender, e) =>
-            {
-                if (!SpeedShow)
-                    SpeedShow = true;
-            };
-            toggleButton.Unchecked += (sender, e) =>
-            {
-                if (SpeedShow)
-                    SpeedShow = false;
-            };
-        }
-        public virtual void RealSpeedEvent(ToggleButton toggleButton)
-        {
-            toggleButton.Checked += (sender, e) =>
-            {
-                if (!RealSpeedShow)
-                    RealSpeedShow = true;
-            };
-            toggleButton.Unchecked += (sender, e) =>
-            {
-                if (RealSpeedShow)
-                    RealSpeedShow = false;
-            };
-        }
-        public virtual void GraphEvent(ListView itemsControl)
-        {
-            itemsControl.PreviewMouseWheel += (sender, e) =>
-            {
-                var ic = sender as ItemsControl;
-                if (ic == null) return;
-                var data = e.GetPosition(this);
-                var count = e.Delta > 0 ? 2 : -2;
-                var scroll = Oscill.FindVisualChildren<ScrollViewer>(ic).FirstOrDefault();
-                if (scroll != null)
-                {
-                    var toHorizontalOffset = (scroll.ExtentWidth / ic.Items.Count) * count + scroll.HorizontalOffset;
-                    scroll.ScrollToHorizontalOffset(toHorizontalOffset);
-                }
-            };
-            itemsControl.SelectionChanged += (sender, e) =>
-            {
-                if (e is SelectionChangedEventArgs arg)
-                {
-                    foreach (var item in arg.AddedItems)
-                    {
-                        if (item is OscillogramWave wave)
-                        {
-                            if (scatterSpectrum.Keys.Contains(wave))
-                            {
-                                scatterSpectrum[wave].IsVisible = wave.IsSelected;
-                            }
-                        }
-                    }
-                    foreach (var item in arg.RemovedItems)
-                    {
-                        if (item is OscillogramWave wave)
-                        {
-                            if (scatterSpectrum.Keys.Contains(wave))
-                            {
-                                scatterSpectrum[wave].IsVisible = wave.IsSelected;
-                            }
-                        }
-                    }
-                }
-            };
-        }
+
+        } 
         #endregion
 
+        #region OnApplyTemplate
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
@@ -1125,20 +991,69 @@ namespace Charting
                 Initilize();
             }
             if (GetTemplateChild(OscillogramChartingCore.GradientName) is ToggleButton toggleButton)
-                GradientEvent(toggleButton);
+            {
+                toggleButton.Checked += (sender, e) =>
+                {
+                    if (!GradientShow)
+                        GradientShow = true;
+                };
+                toggleButton.Unchecked += (sender, e) =>
+                {
+                    if (GradientShow)
+                        GradientShow = false;
+                };
+            }
             if (GetTemplateChild(OscillogramChartingCore.RealGradientName) is ToggleButton toggleButton1)
-                RealGradientEvent(toggleButton1);
+            {
+                toggleButton1.Checked += (sender, e) =>
+                {
+                    if (!RealGradientShow)
+                        RealGradientShow = true;
+                };
+                toggleButton1.Unchecked += (sender, e) =>
+                {
+                    if (RealGradientShow)
+                        RealGradientShow = false;
+                };
+            }
             if (GetTemplateChild(OscillogramChartingCore.PressureName) is ToggleButton toggleButton3)
             {
-                PressureEvent(toggleButton3);
+                toggleButton3.Checked += (sender, e) =>
+                {
+                    if (!PressureShow)
+                        PressureShow = true;
+                };
+                toggleButton3.Unchecked += (sender, e) =>
+                {
+                    if (PressureShow)
+                        PressureShow = false;
+                };
             }
             if (GetTemplateChild(OscillogramChartingCore.SpeedName) is ToggleButton toggleButton4)
             {
-                SpeedEvent(toggleButton4);
+                toggleButton4.Checked += (sender, e) =>
+                {
+                    if (!SpeedShow)
+                        SpeedShow = true;
+                };
+                toggleButton4.Unchecked += (sender, e) =>
+                {
+                    if (SpeedShow)
+                        SpeedShow = false;
+                };
             }
             if (GetTemplateChild(OscillogramChartingCore.RealSpeedName) is ToggleButton toggleButton5)
             {
-                RealSpeedEvent(toggleButton5);
+                toggleButton5.Checked += (sender, e) =>
+                {
+                    if (!RealSpeedShow)
+                        RealSpeedShow = true;
+                };
+                toggleButton5.Unchecked += (sender, e) =>
+                {
+                    if (RealSpeedShow)
+                        RealSpeedShow = false;
+                };
             }
             if (GetTemplateChild(EditName) is ToggleButton tb)
             {
@@ -1153,29 +1068,105 @@ namespace Charting
                         EnableEditDrag = false;
                 };
             }
-
             if (GetTemplateChild(OscillogramChartingCore.GraphName) is ListView itemsControl)
             {
-                GraphEvent(itemsControl);
+                itemsControl.PreviewMouseWheel += (sender, e) =>
+                {
+                    var ic = sender as ItemsControl;
+                    if (ic == null) return;
+                    var data = e.GetPosition(this);
+                    var count = e.Delta > 0 ? 2 : -2;
+                    var scroll = ic.FindVisualChildren<ScrollViewer>().FirstOrDefault();
+                    if (scroll != null)
+                    {
+                        var toHorizontalOffset = (scroll.ExtentWidth / ic.Items.Count) * count + scroll.HorizontalOffset;
+                        scroll.ScrollToHorizontalOffset(toHorizontalOffset);
+                    }
+                };
+                itemsControl.SelectionChanged += (sender, e) =>
+                {
+                    if (e is SelectionChangedEventArgs arg)
+                    {
+                        foreach (var item in arg.AddedItems)
+                        {
+                            if (item is OscillogramWave wave)
+                            {
+                                if (scatterSpectrum.Keys.Contains(wave))
+                                {
+                                    scatterSpectrum[wave].IsVisible = wave.IsSelected;
+                                }
+                            }
+                        }
+                        foreach (var item in arg.RemovedItems)
+                        {
+                            if (item is OscillogramWave wave)
+                            {
+                                if (scatterSpectrum.Keys.Contains(wave))
+                                {
+                                    scatterSpectrum[wave].IsVisible = wave.IsSelected;
+                                }
+                            }
+                        }
+                    }
+                };
             }
-            if (GetTemplateChild(DragXName) is TextBox textBox)
+        }
+        private ContextMenu ContextMenuPreviousExcute(ContextMenu contextMenu)
+        {
+            foreach (MenuItem menuItem in contextMenu.Items)
             {
-                //Binding binding = new Binding();
-                //binding.Path = new PropertyPath("Text");
-                ////binding.Source = this.DragX;
-                //BindingOperations.SetBinding(textBox, DragXProperty, binding);
+                if (menuItem.Name == "Drag_Remove" || menuItem.Name == "Drag_Add")
+                {
+                    menuItem.IsEnabled = GraphType.Gradient == DragType || GraphType.Speed == DragType ? true : false;
+
+                    var scatter = GraphType.Gradient == DragType ? scatterGradient : GraphType.Speed == DragType ? scatterSpeed : null;
+                    var xs = GraphType.Gradient == DragType ? GradientX : GraphType.Speed == DragType ? SpeedX : null;
+                    var ys = GraphType.Gradient == DragType ? GradientY : GraphType.Speed == DragType ? SpeedY : null;
+                    if (scatter != null && menuItem.Name == "Drag_Remove")
+                    {
+                        (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, scatter.YAxisIndex);
+                        bool test = false;
+                        var cIndex = 0;
+                        for (int i = 0; i < xs.Length - 1; i++)
+                        {
+                            test = Math.Abs(ys[i] - coordinateY) <= hitTestStep && Math.Abs(xs[i] - coordinateX) <= hitTestStep;
+                            if (test)
+                            {
+                                cIndex = i;
+                                break;
+                            }
+                        }
+                        menuItem.IsEnabled = test;
+                        if (test && scatter is IDraggable dr && scatter is OscillogramDraggable plotLimitDraggable)
+                        {
+                            if (!Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                            {
+                                Oscill.CurrentDraggableGraph.DraggableGraph.Add(dr);
+                            }
+                            if (Oscill.CurrentDraggableGraph.CurrentDraggableGraph != dr)
+                            {
+                                Oscill.CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                                if (dr is IGraphType graphType)
+                                    Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                                else
+                                    Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                            }
+                        }
+                    }
+                }
             }
-
-
+            return contextMenu;
         }
         private void Initilize()
         {
             ColorShowSource = OscillogramChartingCore.ColorHtmls;
+            Oscill.ContextMenuPreviousExcute = ContextMenuPreviousExcute;
             Oscill.Reset();
             Oscill.Crosshair = Oscill.Plot.AddCrosshair(0, 0);
             Oscill.Plot.XLabel("TimeSpan (max)");
             Oscill.Plot.XAxis.TickLabelFormat(_ => (Math.Round(_ / 60, 1)).ToString());
             Oscill.Plot.YAxis.IsVisible = true;
+            Oscill.Plot.Grid(false);
 
             xAxis = Oscill.Plot.XAxis;
             yAixs = Oscill.Plot.YAxis;
@@ -1212,14 +1203,14 @@ namespace Charting
             Oscill.Crosshair.VerticalLine.PositionFormatter = _ => $"{_:f1} s";
             Oscill.Crosshair.LineColor = System.Drawing.Color.Green;
 
-            Oscill.DragableLabel = Oscill.Plot.AddTooltip(" ", 0.0, 0.0);
-            Oscill.DragableLabel.IsVisible = false;
-            Oscill.DragableLabel.HitTestEnabled = false;
+            Oscill.DragableTip = Oscill.Plot.AddTooltip(" ", 0.0, 0.0);
+            Oscill.DragableTip.IsVisible = false;
+            Oscill.DragableTip.HitTestEnabled = false;
 
             //Oscill.RightClicked -= Oscill.DefaultRightClickEvent!;
             //Oscill.RightClicked += Oscill_RightClicked;
 
-            Oscill.HasDraggable += (sneder, e) =>
+            Oscill.DraggableUpdatedHandler += (sneder, e) =>
             {
                 DragType = e.CurrentDraggableGraphType;
                 EnableEditDrag = e.HasDraggable;
@@ -1261,7 +1252,8 @@ namespace Charting
             var scatterGradientFlag1 = Oscill.Plot.AddScatter(new double[] { 0, 1 }, new double[] { 100, -100 }, label: "ZoomGradient", color: System.Drawing.Color.Transparent);
             scatterGradientFlag1.YAxisIndex = yAixsGradient.AxisIndex;
             #endregion
-        }
+        } 
+        #endregion
 
         #region reset lines
         private void ResetEndClockLine()
@@ -1297,17 +1289,15 @@ namespace Charting
 
 
         }
-
         Coordinate MoveBetweenAdjacentOscillogramVerticalLine(Coordinate requested)
         {
-            var step = 10;
 
-            var speedCount = SpeedX.Count(_ => _ > CurrentTimeIndex + step);
-            var gradientCount = GradientX.Count(_ => _ > CurrentTimeIndex + step);
+            var speedCount = SpeedX.Count(_ => _ > CurrentTimeIndex + hitTestStep);
+            var gradientCount = GradientX.Count(_ => _ > CurrentTimeIndex + hitTestStep);
             var max = speedCount < gradientCount ? gradientCount : speedCount;
 
-            Range(SpeedX, step, CurrentTimeIndex, max, ref requested);
-            Range(GradientX, step, CurrentTimeIndex, max, ref requested);
+            Range(SpeedX, hitTestStep, CurrentTimeIndex, max, ref requested);
+            Range(GradientX, hitTestStep, CurrentTimeIndex, max, ref requested);
 
             LastTimeIndex = (int)requested.X;
             return requested;
@@ -1361,17 +1351,11 @@ namespace Charting
                 }
             }
         }
-
         private void ScatterrEndTimeLine_Dragged(object? sender, EventArgs e)
         {
             var vline = sender as OscillogramVLine;
             if (vline == null) return;
-            //if (DragAction)
-            //{
-
-            //}
         }
-
         /// <summary>
         /// 谱图线
         /// </summary>
@@ -1410,7 +1394,7 @@ namespace Charting
             if (SpeedX.Count() != SpeedY.Count())
                 return;
 
-            var scatter = new ScatterPlotLimitDraggable(SpeedX, SpeedY, GraphType.Speed)
+            var scatter = new OscillogramDraggable(SpeedX, SpeedY, GraphType.Speed)
             {
                 DragCursor = ScottPlot.Cursor.All,
                 DragEnabled = EnableEditDrag,
@@ -1519,13 +1503,13 @@ namespace Charting
                 Oscill.Plot.Remove(scatterGradient);
             if (GradientX.Count() != GradientY.Count())
                 return;
-            var scatter = new ScatterPlotLimitDraggable(GradientX, GradientY, GraphType.Gradient)
+            var scatter = new OscillogramDraggable(GradientX, GradientY, GraphType.Gradient)
             {
                 DragCursor = ScottPlot.Cursor.All,
                 DragEnabled = EnableEditDrag,
                 DragEnabledX = true,
                 DragEnabledY = true,
-                MarkerShape = EnableEditDrag? MarkerShape.filledCircle: MarkerShape.none,
+                MarkerShape = EnableEditDrag ? MarkerShape.filledCircle : MarkerShape.none,
                 Label = $"gradient",
                 Color = ColorTranslator.FromHtml("#B060B0"),
                 LineWidth = 1,
@@ -1542,9 +1526,6 @@ namespace Charting
             Oscill.Plot.Add(scatter);
             scatterGradient = scatter;
         }
-
-
-
         /// <summary>
         /// 实时梯度线
         /// </summary>
