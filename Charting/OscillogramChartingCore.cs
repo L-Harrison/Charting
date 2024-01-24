@@ -64,73 +64,6 @@ namespace Charting
         private WriteableBitmap PlotBitmap;
         private float ScaledWidth => (float)(ActualWidth * Configuration.DpiStretchRatio);
         private float ScaledHeight => (float)(ActualHeight * Configuration.DpiStretchRatio);
-
-        //53种颜色
-        public static List<string> ColorHtmls = new List<string>() {
-            "#000000",
-            "#e6194B",
-            "#3cb44b",
-            "#4363d8",
-            "#f58231",
-            "#911eb4",
-            "#42d4f4",
-            "#f032e6",
-            "#808000",
-
-            "#000075",
-
-            "#1E90FF",
-             "#32CD32",
-            "#7F007F",
-            "#B03060",
-            "#800000",
-            "#483D8B",
-            "#008000",
-            "#FA8072",
-            "#EEE8AA",
-            "#FF1493",
-            "#7B68EE",
-            "#FFC0CB",
-            "#696969",
-            "#556B2F",
-            "#CD853F",
-            "#000080",
-            "#32CD32",
-            "#7F007F",
-            "#B03060",
-            "#800000",
-            "#483D8B",
-            "#008000",
-            "#3CB371",
-            "#008B8B",
-            "#FF0000",
-            "#FF8C00",
-            "#FFD700",
-            "#00FF00",
-            "#9400D3",
-            "#00FA9A",
-            "#DC143C",
-            "#00FFFF",
-            "#00BFFF",
-            "#0000FF",
-            "#ADFF2F",
-            "#DA70D6",
-            "#ffe119",
-            "#469990",
-            "#bfef45",
-             "#fabed4",
-            "#dcbeff",
-            "#fffac8",
-            "#800000",
-            "#9A6324",
-            "#aaffc3",
-            "#ffd8b1",
-
-            "#a9a9a9",
-            "#B0C4DE",
-
-            "#FF00FF",
-        };
         internal bool AutoZoom { set; get; } = true;
         internal bool isHighRefresh = false;
 
@@ -605,6 +538,8 @@ namespace Charting
                     (double coordinateX, double coordinateY) = this.GetMouseCoordinates(0, 0);
                     Crosshair.X = coordinateX;
                     Crosshair.Y = coordinateY;
+
+                    var p = Plot.GetPlottables();
 
                     var list = new List<(ScatterPlot plot, double pointX, double pointY, int pointIndex, double rx)>();
                     foreach (var item in Plot.GetPlottables().Where(x => x is IPlottable p && p.IsVisible))

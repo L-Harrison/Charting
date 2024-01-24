@@ -35,7 +35,9 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Height="40" Background="{StaticResource ToolBar_Background}" Orientation="Horizontal">
+                        <StackPanel Height="40"
+                                    Background="{StaticResource ToolBar_Background}"
+                                    Orientation="Horizontal">
                             <ToggleButton Name="Part_Edit" Width="80" Height="30"
                                           Margin="5,0,0,0" Content="DragEdit"
                                           IsChecked="{TemplateBinding EnableEditDrag}">
@@ -152,27 +154,30 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Rectangle Width="10" Height="10" Margin="5,0" Fill="{Binding}" />
+                                    <Rectangle Width="10" Height="10" Margin="5,0"
+                                               Fill="{Binding}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <!--#endregion-->
-                        <StackPanel Grid.Column="1" Height="40" Background="{StaticResource ToolBar_Background}" Orientation="Horizontal">
+                        <StackPanel Grid.Column="1" Height="40"
+                                    Background="{StaticResource ToolBar_Background}"
+                                    Orientation="Horizontal">
 
                             <ToggleButton Name="Part_Gradient" Height="30" Margin="5,0,0,0"
                                           Content="Gra"
                                           IsChecked="{TemplateBinding GradientShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#B060B0" />
-                                    <SolidColorBrush x:Key="Color" Color="#B060B0" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#206864" />
+                                    <SolidColorBrush x:Key="Color" Color="#206864" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
                             <ToggleButton Name="Part_RealGradient" Height="30" Margin="5,0,0,0"
                                           Content="RealGra"
                                           IsChecked="{TemplateBinding RealGradientShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#FF0000" />
-                                    <SolidColorBrush x:Key="Color" Color="#FF0000" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#AF231C" />
+                                    <SolidColorBrush x:Key="Color" Color="#AF231C" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
                             <Border Height="30" Margin="4,8" HorizontalAlignment="Center"
@@ -181,16 +186,16 @@
                                           Content="Speed"
                                           IsChecked="{TemplateBinding SpeedShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#FFAA25" />
-                                    <SolidColorBrush x:Key="Color" Color="#FFAA25" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#F87818" />
+                                    <SolidColorBrush x:Key="Color" Color="#F87818" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
                             <ToggleButton Name="Part_RealSpeed" Height="30" Margin="5,0,0,0"
                                           Content="RealSpeed"
                                           IsChecked="{TemplateBinding RealSpeedShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#006400" />
-                                    <SolidColorBrush x:Key="Color" Color="#006400" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#49345A" />
+                                    <SolidColorBrush x:Key="Color" Color="#49345A" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
                             <Border Height="30" Margin="4,8" HorizontalAlignment="Center"
@@ -230,7 +235,10 @@
                                                             BorderBrush="{TemplateBinding BorderBrush}"
                                                             BorderThickness="{TemplateBinding BorderThickness}"
                                                             CornerRadius="5" SnapsToDevicePixels="true">
-                                                        <ContentPresenter x:Name="ContentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                        <ContentPresenter x:Name="ContentPresenter"
+                                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
@@ -270,7 +278,8 @@
                                 </ListView.ItemTemplate>
                             </ListView>
                         </StackPanel>
-                        <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="LightGray" BorderThickness="0,1,0,0">
+                        <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="LightGray"
+                                BorderThickness="0,1,0,0">
                             <local:OscillogramChartingCore x:Name="Part_OscillogramChartingCore" />
                         </Border>
 
