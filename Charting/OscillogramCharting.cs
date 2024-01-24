@@ -446,16 +446,14 @@ namespace Charting
         private static void OnLastTimeIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             //((OscillogramCharting)d).Initilize();
-
             ((OscillogramCharting)d).ResetSpeed();
             ((OscillogramCharting)d).ResetRealSpeed();
             ((OscillogramCharting)d).ResetGradient();
             ((OscillogramCharting)d).ResetRealGradient();
-            ((OscillogramCharting)d).ResetSpectrum();
             ((OscillogramCharting)d).ResetPressure();
-
             ((OscillogramCharting)d).ResetEndClockLine();
             ((OscillogramCharting)d).ResetCurrentLine();
+            ((OscillogramCharting)d).ResetSpectrum();
         }
 
         /// <summary>

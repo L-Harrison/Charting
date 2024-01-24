@@ -33,7 +33,7 @@ namespace Charting.Test
             InitializeComponent();
             this.DataContext = this;
             DispatcherTimer timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(200);
+            timer.Interval = TimeSpan.FromMilliseconds(10);
             timer.Tick += Timer_Tick;
             timer.Start();
 
