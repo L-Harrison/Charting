@@ -16,7 +16,7 @@ namespace Charting.Extensions
         /// </summary>
         /// <param name="waves">初始波长</param>
         /// <returns></returns>
-        public static (ObservableCollection<OscillogramWave> X, ObservableCollection<OscillogramWave> Y) InitilzeXY(  params double[] waves)
+        public static (ObservableCollection<OscillogramWave> X, ObservableCollection<OscillogramWave> Y) InitilzeXY(params double[] waves)
         {
             var X = new ObservableCollection<OscillogramWave>();
             var Y = new ObservableCollection<OscillogramWave>();
@@ -44,7 +44,7 @@ namespace Charting.Extensions
         /// <param name="wave">追加波长</param>
         /// <param name="x">x集合</param>
         /// <param name="y">y集合</param>
-        public static void AppendXY(this (ObservableCollection<OscillogramWave> X, ObservableCollection<OscillogramWave> Y) source,double wave, double[] x, double[] y)
+        public static void AppendXY(this (ObservableCollection<OscillogramWave> X, ObservableCollection<OscillogramWave> Y) source, double wave, double[] x, double[] y)
         {
             var dscib = $"{wave}";
             var count = source.X.Count(_ => _.Wave == wave);
@@ -77,7 +77,25 @@ namespace Charting.Extensions
 
         //53种颜色
         public static List<string> ColorHtmls = new List<string>() {
-            "#000000",
+
+                "#266489", "#68B9C0",  "#F37F64",
+        "#DAC096", "#76846E",
+        "#A65B69",
+             "#1f77b4", "#aec7e8", "#ff7f0e", "#ffbb78", "#2ca02c",
+        "#98df8a", "#d62728", "#ff9896", "#9467bd", "#c5b0d5",
+        "#8c564b", "#c49c94", "#e377c2", "#f7b6d2", "#7f7f7f",
+        "#c7c7c7", "#bcbd22", "#dbdb8d", "#17becf", "#9edae5",
+
+
+             "#000000",
+            "#FF00FF",
+                 "#008000",
+            "#FA8072",
+            "#FF1493",
+            "#7B68EE",
+            "#FFC0CB",
+
+            "#90D585", "#F3C151",
             "#e6194B",
             "#3cb44b",
             "#4363d8",
@@ -86,7 +104,8 @@ namespace Charting.Extensions
             "#42d4f4",
             "#f032e6",
             "#808000",
-
+            "#97A69D",
+             "#424856", "#8F97A4",
             "#000075",
 
             "#1E90FF",
@@ -102,6 +121,7 @@ namespace Charting.Extensions
             "#7B68EE",
             "#FFC0CB",
             "#696969",
+
             "#556B2F",
             "#CD853F",
             "#000080",
@@ -132,6 +152,7 @@ namespace Charting.Extensions
             "#dcbeff",
             "#fffac8",
             "#800000",
+             "#DABFAF",
             "#9A6324",
             "#aaffc3",
             "#ffd8b1",
@@ -139,7 +160,8 @@ namespace Charting.Extensions
             "#a9a9a9",
             "#B0C4DE",
 
-            "#FF00FF",
+            "#EEE8AA",
+
         };
     }
 }

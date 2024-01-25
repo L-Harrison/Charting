@@ -11,11 +11,15 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="ScottPlot" Version="4.1.70" />
+    <PackageReference Include="ScottPlot" Version="4.1.71" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="TemplateSelectors\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="ScottPlot.csproj" />
   </ItemGroup>
 
 </Project>

@@ -263,6 +263,9 @@ namespace Charting
             Backend.Configuration.ScaleChanged += new EventHandler((sender, e) => Backend.Resize(ScaledWidth, ScaledHeight, useDelayedRendering: true));
             Configuration = Backend.Configuration;
 
+            //Configuration.AltLeftClickDragZoom = false;
+            //Configuration.LeftClickDragPan = false;
+
             //Configuration.Quality = ScottPlot.Control.QualityMode.Low;
             //Configuration.DpiStretch = false;
             //Configuration.DpiStretchRatio =.9f;

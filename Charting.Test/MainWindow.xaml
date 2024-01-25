@@ -16,8 +16,9 @@
             <RowDefinition />
             <!--<RowDefinition/>-->
         </Grid.RowDefinitions>
-        <charting:OscillogramCharting CurrentTimeIndex="{Binding CurrentTime}"
-                                      DefaultX="3600"
+        <charting:OscillogramCharting CanDraggable="True" ConfigurationGradientMax="100" ConfigurationGradientMin="0"
+                                      ConfigurationSpeedMax="200" ConfigurationSpeedMin="0"
+                                      CurrentTimeIndex="{Binding CurrentTime}"
                                       EnableEditDrag="{Binding EnableEditDrag}"
                                       GradientRealX="{Binding GradientRealX, Mode=TwoWay}"
                                       GradientRealY="{Binding GradientRealY, Mode=TwoWay}"

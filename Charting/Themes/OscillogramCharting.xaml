@@ -18,6 +18,7 @@
         <Setter Property="CurrentTimeIndex" Value="0" />
         <Setter Property="GradientNum" Value="1280" />
         <Setter Property="AutoRightAdjustEnable" Value="True" />
+        <Setter Property="CanDraggable" Value="True" />
         <Setter Property="IntervalAdjustEnable" Value="False" />
         <Setter Property="SpeedNum" Value="1280" />
         <Setter Property="DragX" Value="0" />
@@ -40,7 +41,8 @@
                                     Orientation="Horizontal">
                             <ToggleButton Name="Part_Edit" Width="80" Height="30"
                                           Margin="5,0,0,0" Content="DragEdit"
-                                          IsChecked="{TemplateBinding EnableEditDrag}">
+                                          IsChecked="{TemplateBinding EnableEditDrag}"
+                                          Visibility="{Binding CanDraggable, Converter={StaticResource BoolToVisibleConverter}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
                                 <ToggleButton.Resources>
                                     <SolidColorBrush x:Key="TextColor" Color="#B060B0" />
                                     <SolidColorBrush x:Key="Color" Color="#B060B0" />
@@ -186,16 +188,16 @@
                                           Content="Speed"
                                           IsChecked="{TemplateBinding SpeedShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#F87818" />
-                                    <SolidColorBrush x:Key="Color" Color="#F87818" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#FF7F50" />
+                                    <SolidColorBrush x:Key="Color" Color="#FF7F50" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
                             <ToggleButton Name="Part_RealSpeed" Height="30" Margin="5,0,0,0"
                                           Content="RealSpeed"
                                           IsChecked="{TemplateBinding RealSpeedShow}">
                                 <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#49345A" />
-                                    <SolidColorBrush x:Key="Color" Color="#49345A" />
+                                    <SolidColorBrush x:Key="TextColor" Color="#2F4F4F" />
+                                    <SolidColorBrush x:Key="Color" Color="#2F4F4F" />
                                 </ToggleButton.Resources>
                             </ToggleButton>
                             <Border Height="30" Margin="4,8" HorizontalAlignment="Center"

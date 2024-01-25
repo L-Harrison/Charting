@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34009.444
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charting", "Charting\Charting.csproj", "{04F53EE2-AB59-44CF-A852-74C3BDE24B3B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Charting", "Charting\Charting.csproj", "{04F53EE2-AB59-44CF-A852-74C3BDE24B3B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Charting.Test", "Charting.Test\Charting.Test.csproj", "{707AC087-28C0-4745-99BB-656FB1EBB258}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Charting.Test", "Charting.Test\Charting.Test.csproj", "{707AC087-28C0-4745-99BB-656FB1EBB258}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
