@@ -31,6 +31,7 @@
                                       SpeedRealY="{Binding SpeedRealY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       SpeedX="{Binding SpeedX, Mode=TwoWay}"
                                       SpeedY="{Binding SpeedY, Mode=TwoWay}"
+                                      Theme="Default"
                                       Xs="{Binding X}"
                                       Ys="{Binding Y}" />
         <!--<charting:OscillogramChartingCore Grid.Row="1" />-->

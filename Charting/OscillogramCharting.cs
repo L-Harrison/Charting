@@ -74,6 +74,42 @@ namespace Charting
         #region dp
 
         #region Configuration settings
+
+
+        public ThemesStyle Theme
+        {
+            get { return (ThemesStyle)GetValue(ThemeProperty); }
+            set { SetValue(ThemeProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for Theme.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty ThemeProperty =
+            DependencyProperty.Register("Theme", typeof(ThemesStyle), typeof(OscillogramCharting), new PropertyMetadata(ThemesStyle.Default, (d, e) =>
+           {
+               if (((OscillogramCharting)d).Oscill != null)
+                   ((OscillogramCharting)d).Oscill.Theme = (ThemesStyle)e.NewValue;
+               if ((ThemesStyle)e.NewValue== ThemesStyle.Black)
+               {
+                   var brush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
+                   Application.Current.Resources["ToolBar_Background"] = brush;
+
+
+                   brush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F3F3F3"));
+                   Application.Current.Resources["ToolBar_Foreground"] = brush;
+               }
+               else
+               {
+                   var te = Application.Current.Resources["ToolBar_Background"];
+                   var brush=new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F3F3F3"));
+                   Application.Current.Resources["ToolBar_Background"] = brush;      
+                   
+                    brush=new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
+                   Application.Current.Resources["ToolBar_Foreground"] = brush;
+               }
+
+           }));
+
+
         public double ConfigurationSpeedMax
         {
             get { return (double)GetValue(ConfigurationSpeedMaxProperty); }
@@ -130,7 +166,8 @@ namespace Charting
 
         // Using a DependencyProperty as the backing store for CanDraggable.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty CanDraggableProperty =
-            DependencyProperty.Register("CanDraggable", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, (sender, e) => {
+            DependencyProperty.Register("CanDraggable", typeof(bool), typeof(OscillogramCharting), new PropertyMetadata(false, (sender, e) =>
+            {
                 if (!(bool)e.NewValue)
                 {
                     ((OscillogramCharting)sender).EnableEditDrag = false;
@@ -296,7 +333,7 @@ namespace Charting
                 }
                 oscillogramCharting.DragType = oscillogramCharting.Oscill.CurrentDraggableGraph.CurrentDraggableGraphType;
             }
-            oscillogramCharting.Oscill.DragableTip.IsVisible = oscillogramCharting.DragType== GraphType.Speed || oscillogramCharting.DragType == GraphType.Gradient;
+            oscillogramCharting.Oscill.DragableTip.IsVisible = oscillogramCharting.DragType == GraphType.Speed || oscillogramCharting.DragType == GraphType.Gradient;
 
         }
         private static void OnEnableEditDrag(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -975,7 +1012,7 @@ namespace Charting
         /// </summary>
         private OscillogramVLine? scatterrEndTimeLine = null!;
         private VLine? scatterCurrentTimeLine = null!;
-       
+
         private ConcurrentDictionary<OscillogramWave, Polygon[]> scatterPolygons = new();
         #endregion
 
@@ -1210,6 +1247,8 @@ namespace Charting
             ColorShowSource = OscillogramExtension.ColorHtmls;
             Oscill.ContextMenuPreviousExcute = ContextMenuPreviousExcute;
             Oscill.Reset();
+
+            Oscill.Theme = Theme;
             Oscill.Crosshair = Oscill.Plot.AddCrosshair(0, 0);
             Oscill.Plot.XLabel("TimeSpan (max)");
             Oscill.Plot.XAxis.TickLabelFormat(_ => (Math.Round(_ / 60, 1)).ToString());
@@ -1220,7 +1259,7 @@ namespace Charting
             yAixs = Oscill.Plot.YAxis;
             yAixs.Label("Spectrum");
             yAixs.LabelStyle(fontSize: 13, rotation: 0);
-            yAixs.Color(ColorTranslator.FromHtml("#252526"));
+            //yAixs.Color(ColorTranslator.FromHtml("#252526"));
             yAixs.IsVisible = true;
             //yAixs.SetZoomOutLimit(3000);
             //yAixs.SetZoomInLimit(0);
@@ -1458,7 +1497,7 @@ namespace Charting
 
                 scatterSpectrum[Xs[i]] = scatter;
 
-            
+
             }
         }
         private void ResetCurrentLine()
@@ -1527,7 +1566,7 @@ namespace Charting
                 Color = ColorTranslator.FromHtml("#FF7F50"),
                 LineWidth = 1,
                 YAxisIndex = yAixsSpeed.AxisIndex,
-                MaxRenderIndex =Math.Min( LastTimeIndex ,SpeedX.Length - 1),
+                MaxRenderIndex = Math.Min(LastTimeIndex, SpeedX.Length - 1),
                 //IsHighlighted = false,
                 //scatter.MarkerShape = MarkerShape.none;
                 IsVisible = yAixsSpeed.IsVisible && SpeedShow,
@@ -1550,9 +1589,9 @@ namespace Charting
                 {
                     newY = ConfigurationSpeedMax;
                 }
-                if (newY <ConfigurationSpeedMin )
+                if (newY < ConfigurationSpeedMin)
                 {
-                    newY= ConfigurationSpeedMin;
+                    newY = ConfigurationSpeedMin;
                     if (newY < 0)
                         newY = 0;
                 }
@@ -1570,15 +1609,15 @@ namespace Charting
                         newY = 0;
                 }
             }
-            if (index==xs.Count-1)
+            if (index == xs.Count - 1)
             {
                 return new Coordinate(xs.Last(), newY);
             }
             int leftIndex = Math.Max(index - 1, 0);
             int rightIndex = Math.Min(index + 1, xs.Count - 1);
-         
-         
-           
+
+
+
             if (IntervalAdjustEnable)
             {
                 newX = Math.Max(newX, xs[leftIndex]);
@@ -1675,7 +1714,7 @@ namespace Charting
                 LineWidth = 1,
                 YAxisIndex = yAixsGradient.AxisIndex,
                 XAxisIndex = xAxis.AxisIndex,
-                MaxRenderIndex =Math.Min(LastTimeIndex, GradientX.Length - 1),
+                MaxRenderIndex = Math.Min(LastTimeIndex, GradientX.Length - 1),
                 //IsHighlighted = true,
                 IsVisible = yAixsGradient.IsVisible && GradientShow,
 

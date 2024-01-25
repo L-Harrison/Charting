@@ -18,8 +18,4 @@
     <Folder Include="TemplateSelectors\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="ScottPlot.csproj" />
-  </ItemGroup>
-
 </Project>
