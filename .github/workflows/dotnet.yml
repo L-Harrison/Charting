@@ -1,0 +1,44 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+        # 1.Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v3
+     # 2.runtime environment
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+     
+    - name: Restore dependencies
+      run: dotnet restore
+      # 3.build
+    - name: Build
+      #run: dotnet build --no-restore
+      run: dotnet build --configuration Release --no-restore
+      working-directory: ./Charting/
+    - name: Publish
+      uses: brandedoutcast/publish-nuget@v2.5.2
+      with:
+          PROJECT_FILE_PATH: Charting/Charting.csproj
+          NUGET_KEY: ${{secrets.Charting}}
+      run: dotnet test --no-build --verbosity normal
+
+  
+    # 5. Push  package
+   # - name: Push generated package to GitHub registry
+    #  run: |
+    #    .\nuget push .\Charting\bin\Release\*.nupkg -Source https://api.nuget.org/v3/index.json -SkipDuplicate -ApiKey ${{ secrets.NugetKey }} -NoSymbols
