@@ -12,7 +12,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
         # 1.Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -22,23 +22,25 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 6.0.x
-     
+
+    - name: Install Nuget
+      uses: nuget/setup-nuget@v1
+      with:        
+        nuget-version: '5.x'
+        
     - name: Restore dependencies
       run: dotnet restore
-      # 3.build
-    - name: Build
-      #run: dotnet build --no-restore
-      run: dotnet build --configuration Release --no-restore
-      working-directory: ./Charting/
-    - name: Publish
-      uses: brandedoutcast/publish-nuget@v2.5.2
-      with:
-          PROJECT_FILE_PATH: Charting/Charting.csproj
-          NUGET_KEY: ${{secrets.Charting}}
-      run: dotnet test --no-build --verbosity normal
+      
+    - name: pack
+      run: dotnet pack Charting/Charting.csproj -c release
+      #working-directory: ./Charting/
 
-  
-    # 5. Push  package
-   # - name: Push generated package to GitHub registry
+    #- name: Add private GitHub registry to NuGet
     #  run: |
-    #    .\nuget push .\Charting\bin\Release\*.nupkg -Source https://api.nuget.org/v3/index.json -SkipDuplicate -ApiKey ${{ secrets.NugetKey }} -NoSymbols
+    #    nuget sources add -name github -Source https://nuget.pkg.github.com/ORGANIZATION_NAME/index.json -Username ORGANIZATION_NAME -Password ${ { secrets.GITHUB_TOKEN } }
+    - name: publish
+      run: | 
+        nuget push .\Charting\bin\release\*.nupkg  -Source https://api.nuget.org/v3/index.json -SkipDuplicate -ApiKey ${ { secrets.Charting } } -NoSymbols 
+    
+   
+   
