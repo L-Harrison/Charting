@@ -1,21 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyVersion>1.0.24.24</AssemblyVersion>
-    <FileVersion>218.217.217.0</FileVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<AssemblyVersion>1.0.24.24</AssemblyVersion>
+		<FileVersion>219.218.218.0</FileVersion>
 
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="ScottPlot" Version="4.1.71" />
-  </ItemGroup>
+		<Version>0.2.1</Version>
+		<Authors>HarrisonRay</Authors>
 
-  <ItemGroup>
-    <Folder Include="TemplateSelectors\" />
-  </ItemGroup>
+		<RepositoryUrl>https://github.com/L-Harrison/Charting.git</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/L-Harrison/Charting</PackageProjectUrl>
+		
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="ScottPlot" Version="4.1.71" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="TemplateSelectors\" />
+	</ItemGroup>
 
 </Project>
