@@ -4,4 +4,4 @@
 3. 峰型分析
 4. WPF MVVM
 
-![](Charting01.png) ![](Charting02.png) ![](Charting03.png)
+![](Charting01.png) ![](Charting02.png) ![](Charting03.png) ![](Charting04.png)
