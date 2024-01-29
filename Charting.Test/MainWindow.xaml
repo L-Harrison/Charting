@@ -13,11 +13,17 @@
         mc:Ignorable="d">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition />
-            <!--<RowDefinition/>-->
+            <RowDefinition Height="*" />
+            <RowDefinition Height=".9*" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
-        <charting:OscillogramCharting CanDraggable="True" ConfigurationGradientMax="100" ConfigurationGradientMin="0"
-                                      ConfigurationSpeedMax="200" ConfigurationSpeedMin="0"
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Border Grid.ColumnSpan="2" />
+        <charting:OscillogramCharting Grid.Row="1" CanDraggable="True" ConfigurationGradientMax="100"
+                                      ConfigurationGradientMin="0" ConfigurationSpeedMax="200" ConfigurationSpeedMin="0"
                                       CurrentTimeIndex="{Binding CurrentTime}"
                                       EnableEditDrag="{Binding EnableEditDrag}"
                                       GradientRealX="{Binding GradientRealX, Mode=TwoWay}"
@@ -35,5 +41,15 @@
                                       Xs="{Binding X}"
                                       Ys="{Binding Y}" />
         <!--<charting:OscillogramChartingCore Grid.Row="1" />-->
+        <charting:TrayCore Grid.Row="1" Grid.Column="1" EnableCellDraggable="True"
+                           EnablePanelDraggable="True"
+                           HeaderMode="{Binding HeaderMode, UpdateSourceTrigger=PropertyChanged}"
+                           IsCellOver="TrayCore_IsCellOver"
+                           ItemsSource="{Binding Trays}"
+                           MouseDoubleClick="TrayCore_MouseDoubleClick" Theme="Default" />
+        <!--<UniformGrid Grid.Row="2" Columns="2">
+            <Button Click="Button_Click" Content="add" />
+            <Button Click="Button_remove_Click" Content="Remove" />
+        </UniformGrid>-->
     </Grid>
 </Window>

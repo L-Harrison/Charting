@@ -31,7 +31,7 @@ namespace Charting
 
         public OscillogramVLine() : base(false)
         {
-            GraphType = GraphType.Null;
+            GraphType = GraphType.GraphType;
         }
     }
 }

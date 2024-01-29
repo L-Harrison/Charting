@@ -11,7 +11,7 @@ namespace Charting.Models
     /// </summary>
     public enum  GraphType
     {
-        Null = 1 << 1,
+        GraphType = 1 << 1,
         /// <summary>
         /// 梯度
         /// </summary>

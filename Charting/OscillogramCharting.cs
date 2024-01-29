@@ -76,6 +76,31 @@ namespace Charting
         #region Configuration settings
 
 
+        public System.Windows.Media.Brush ForeGround
+        {
+            get { return (System.Windows.Media.Brush)GetValue(ForeGroundProperty); }
+            set { SetValue(ForeGroundProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for ForeGround.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty ForeGroundProperty =
+            DependencyProperty.Register("ForeGround", typeof(System.Windows.Media.Brush), typeof(OscillogramCharting), new PropertyMetadata(default));
+
+
+
+        public System.Windows.Media.Brush BackGround
+        {
+            get { return (System.Windows.Media.Brush)GetValue(BackGroundProperty); }
+            set { SetValue(BackGroundProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for BackGround.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty BackGroundProperty =
+            DependencyProperty.Register("BackGround", typeof(System.Windows.Media.Brush), typeof(OscillogramCharting), new PropertyMetadata(default));
+
+
+
+
         public ThemesStyle Theme
         {
             get { return (ThemesStyle)GetValue(ThemeProperty); }
@@ -88,24 +113,32 @@ namespace Charting
            {
                if (((OscillogramCharting)d).Oscill != null)
                    ((OscillogramCharting)d).Oscill.Theme = (ThemesStyle)e.NewValue;
-               if ((ThemesStyle)e.NewValue== ThemesStyle.Black)
-               {
-                   var brush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
-                   Application.Current.Resources["ToolBar_Background"] = brush;
+
+               var theme = ((ThemesStyle)e.NewValue).ToString();
+               var style = ScottPlot.Style.GetStyles().Where(_ => _.GetType().Name == theme).FirstOrDefault() ?? ScottPlot.Style.Default;
+
+               var mColor = System.Windows.Media.Color.FromArgb(style.FigureBackgroundColor.A, style.FigureBackgroundColor.R, style.FigureBackgroundColor.G, style.FigureBackgroundColor.B);
+               var solidBrush = new SolidColorBrush(mColor);
+               //((OscillogramCharting)d).BackGround = solidBrush;
 
 
-                   brush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F3F3F3"));
-                   Application.Current.Resources["ToolBar_Foreground"] = brush;
-               }
-               else
-               {
-                   var te = Application.Current.Resources["ToolBar_Background"];
-                   var brush=new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F3F3F3"));
-                   Application.Current.Resources["ToolBar_Background"] = brush;      
-                   
-                    brush=new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#000000"));
-                   Application.Current.Resources["ToolBar_Foreground"] = brush;
-               }
+               var mFColor = System.Windows.Media.Color.FromArgb(style.TitleFontColor.A, style.TitleFontColor.R, style.TitleFontColor.G, style.TitleFontColor.B);
+               var solidBrushM = new SolidColorBrush(mFColor);
+               //((OscillogramCharting)d).BackGround = solidBrushM;
+
+
+               var btnForegroundColor = System.Windows.Media.Color.FromArgb(style.TitleFontColor.A, style.TitleFontColor.R, style.TickLabelColor.G, style.TickLabelColor.B);;
+               var btnForegroundBrush = new SolidColorBrush(btnForegroundColor);
+               //((OscillogramCharting)d).BackGround = solidBrushM;
+
+
+               Application.Current.Resources["ToolBar_Background"] = solidBrush;
+
+               Application.Current.Resources["ToolBar_Foreground"] = solidBrushM;
+
+               Application.Current.Resources["ToggleBtnForeground"] = btnForegroundBrush;
+
+               var r=ToggleButtonHelper.DefaultForeGroundProperty;
 
            }));
 
@@ -204,7 +237,7 @@ namespace Charting
 
         // Using a DependencyProperty as the backing store for DragType.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty DragTypeProperty =
-            DependencyProperty.Register("DragType", typeof(GraphType), typeof(OscillogramCharting), new PropertyMetadata(GraphType.Null, OnDragTypeChanged));
+            DependencyProperty.Register("DragType", typeof(GraphType), typeof(OscillogramCharting), new PropertyMetadata(GraphType.GraphType, OnDragTypeChanged));
 
         private static void OnDragTypeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -267,7 +300,6 @@ namespace Charting
             var settings = oscillogramCharting.Oscill.Plot.GetSettings();
             if (!valueEv)
             {
-                //((OscillogramCharting)d).Oscill.DragableTip.IsVisible = false;
                 //((OscillogramCharting)d).scatterrEndTimeLine.IsVisible = false;
                 //((OscillogramCharting)d).scatterrEndTimeLine.DragEnabled = false;
 
@@ -287,18 +319,16 @@ namespace Charting
                         l.LineWidth = 1;
                     dr.DragEnabled = valueEv;
                 }
-                oscillogramCharting.DragType = GraphType.Null;
+                oscillogramCharting.DragType = GraphType.GraphType;
                 oscillogramCharting.Oscill.CurrentDraggableGraph.DraggableGraph.Clear();
                 oscillogramCharting.Oscill.CurrentDraggableGraph.CurrentDraggableGraph = null!;
-                oscillogramCharting.Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                oscillogramCharting.Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.GraphType;
 
             }
             else
             {
                 //((OscillogramCharting)d).scatterrEndTimeLine.DragEnabled = false;
-
                 oscillogramCharting.OscillMenus();
-
                 if (!oscillogramCharting.Oscill.CurrentDraggableGraph.HasDraggable)
                 {
                     IDraggable[] enabledDraggables = settings.Plottables
@@ -326,14 +356,13 @@ namespace Charting
                             if (dr is IGraphType graphType)
                                 oscillogramCharting.Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
                             else
-                                oscillogramCharting.Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                                oscillogramCharting.Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.GraphType;
                         }
                     }
 
                 }
                 oscillogramCharting.DragType = oscillogramCharting.Oscill.CurrentDraggableGraph.CurrentDraggableGraphType;
             }
-            oscillogramCharting.Oscill.DragableTip.IsVisible = oscillogramCharting.DragType == GraphType.Speed || oscillogramCharting.DragType == GraphType.Gradient;
 
         }
         private static void OnEnableEditDrag(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -631,7 +660,7 @@ namespace Charting
                         if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType == GraphType.Gradient)
                         {
                             ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = null!;
-                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.GraphType;
                             if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
                             {
                                 ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Remove(dr);
@@ -639,7 +668,7 @@ namespace Charting
                         }
                         if (charting.DragType == GraphType.Gradient)
                         {
-                            charting.DragType = GraphType.Null;
+                            charting.DragType = GraphType.GraphType;
                         }
                     }
                 }
@@ -690,7 +719,7 @@ namespace Charting
                         if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType == GraphType.Speed)
                         {
                             ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraph = null!;
-                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                            ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.GraphType;
                             if (((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
                             {
                                 ((OscillogramCharting)d).Oscill.CurrentDraggableGraph.DraggableGraph.Remove(dr);
@@ -698,7 +727,7 @@ namespace Charting
                         }
                         if (charting.DragType == GraphType.Speed)
                         {
-                            charting.DragType = GraphType.Null;
+                            charting.DragType = GraphType.GraphType;
                         }
                     }
                 }
@@ -1058,7 +1087,7 @@ namespace Charting
             // create a timer to update the GUI
             _renderTimer = new DispatcherTimer();
             _renderTimer.Interval = TimeSpan.FromMilliseconds(20);
-            _renderTimer.Tick += (sender, e) => Oscill?.AutoRender(/*Oscill.isHighRefresh*/);
+            _renderTimer.Tick += (sender, e) => Oscill?.AutoRender(Oscill.isHighRefresh);
             _renderTimer.Start();
 
 
@@ -1234,7 +1263,7 @@ namespace Charting
                                 if (dr is IGraphType graphType)
                                     Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
                                 else
-                                    Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.Null;
+                                    Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.GraphType;
                             }
                         }
                     }
@@ -1289,10 +1318,7 @@ namespace Charting
 
             Oscill.Crosshair.VerticalLine.PositionFormatter = _ => $"{_:f1} s";
             Oscill.Crosshair.LineColor = System.Drawing.Color.Green;
-
-            Oscill.DragableTip = Oscill.Plot.AddTooltip(" ", 0.0, 0.0);
-            Oscill.DragableTip.IsVisible = false;
-            Oscill.DragableTip.HitTestEnabled = false;
+      
 
             //Oscill.RightClicked -= Oscill.DefaultRightClickEvent!;
             //Oscill.RightClicked += Oscill_RightClicked;
@@ -1312,22 +1338,6 @@ namespace Charting
                 else
                 {
                     EnableEditDragEv(this, e.HasDraggable);
-                }
-            };
-            Oscill.Dragped += (sender, e) =>
-            {
-                if (e is (double x, double y, IDraggable dr))
-                {
-                    DragX = x;
-                    DragY = y;
-                    if (dr is IGraphType graphType)
-                    {
-                        DragType = graphType.GraphType;
-                    }
-                    else
-                    {
-                        DragType = GraphType.Null;
-                    }
                 }
             };
 
@@ -1352,6 +1362,50 @@ namespace Charting
             var scatterGradientFlag1 = Oscill.Plot.AddScatter(new double[] { 0, 1 }, new double[] { 100, -100 }, label: "ZoomGradient", color: System.Drawing.Color.Transparent);
             scatterGradientFlag1.YAxisIndex = yAixsGradient.AxisIndex;
             #endregion
+        }
+        internal void Dragged(object? sender, EventArgs e)
+        {
+            if (sender is OscillogramDraggable ps)
+            {
+                var xs = ps.Xs;
+                var ys = ps.Ys;
+                var index = ps.CurrentIndex;
+
+                int leftIndex = Math.Max(index - 1, 0);
+                int rightIndex = Math.Min(index + 1, xs.Count() - 1);
+
+                var point = Mouse.GetPosition(this);
+                (double coordinateX, double coordinateY) = Oscill.GetMouseCoordinates(0, 0);
+
+
+                if (ps is IDraggable dr)
+                {
+                    if (!Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
+                    {
+                        Oscill. CurrentDraggableGraph.DraggableGraph.Add(dr);
+                    }
+                    if (Oscill.CurrentDraggableGraph.CurrentDraggableGraph != dr)
+                    {
+                        Oscill.CurrentDraggableGraph.CurrentDraggableGraph = dr!;
+                        if (dr is IGraphType graphType)
+                            Oscill. CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                        else
+                            Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.GraphType;
+                    }
+                }
+
+                DragX = Math.Round(ps.Xs[ps.CurrentIndex], 1);
+                DragY = Math.Round(ps.Ys[ps.CurrentIndex], 1);
+                if (Oscill.CurrentDraggableGraph.CurrentDraggableGraph is IGraphType graphType2)
+                {
+                    DragType = graphType2.GraphType;
+                }
+                else
+                {
+                    DragType = GraphType.GraphType;
+                }
+            }
+
         }
         #endregion
 
@@ -1572,9 +1626,7 @@ namespace Charting
                 IsVisible = yAixsSpeed.IsVisible && SpeedShow,
 
             };
-            scatter.Dragged += Oscill.Tooltip_Dragged;
-            // use a custom function to limit the movement of points
-
+            scatter.Dragged += Dragged;
             scatter.MovePointFunc = MoveBetweenAdjacent;
             Oscill.Plot.Add(scatter);
             scatterSpeed = scatter;
@@ -1672,8 +1724,6 @@ namespace Charting
             scatterRealSpeed = scatterReal;
         }
 
-        //#B060B0  #FF0000 #006400 #FF8C00
-
         /// <summary>
         /// 压力线
         /// </summary>
@@ -1720,7 +1770,7 @@ namespace Charting
 
             };
 
-            scatter.Dragged += Oscill.Tooltip_Dragged;
+            scatter.Dragged += Dragged;
             scatter.MovePointFunc = MoveBetweenAdjacent;
             Oscill.Plot.Add(scatter);
             scatterGradient = scatter;

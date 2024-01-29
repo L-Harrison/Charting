@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -28,12 +29,13 @@ namespace Charting.Test
     {
 
         public event PropertyChangedEventHandler? PropertyChanged;
+        public ObservableCollection< Tray> Trays { get; set; }
         public MainWindow()
         {
             InitializeComponent();
             this.DataContext = this;
             DispatcherTimer timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(10);
+            timer.Interval = TimeSpan.FromMilliseconds(200);
             timer.Tick += Timer_Tick;
             timer.Start();
 
@@ -71,9 +73,6 @@ namespace Charting.Test
             }
 
             CurrentTime = 0;
-
-
-
 
             LastTime = 1500;
             GradientX = new double[10];
@@ -138,11 +137,45 @@ namespace Charting.Test
 
 
             #endregion
+
+
+            Trays = new();
+            Init();
+
+            _ = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    try
+                    {
+                        await Task.Delay(1000);
+                        foreach (var item in Trays)
+                        {
+                            foreach (var cell in item.Cells)
+                            {
+                                cell.Volumns = 15;
+                                while (true)
+                                {
+                                    if (cell.CurrentVol + .05 >= cell.Volumns)
+                                    {
+                                        break;
+                                    }
+                                    cell.CurrentVol += 1.3;
+                                    await Task.Delay(10);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+            });
         }
         int wave = 451;
         private void Timer_Tick1(object? sender, EventArgs e)
         {
-            return;
             var x = new double[LastTime];
             var y = new double[LastTime];
             for (int i = 0; i < LastTime; i++)
@@ -152,7 +185,6 @@ namespace Charting.Test
             }
             (X, Y).AppendXY(wave++, x, y);
         }
-
         private void Timer_Tick(object? sender, EventArgs e)
         {
             if (CurrentTime > LastTime)
@@ -214,7 +246,7 @@ namespace Charting.Test
 
                 for (int i = 0; i < X.Count; i++)
                 {
-                    if (x[i].Wave == 600)
+                    if (_x[i].Wave == 600)
                         continue;
                     X[i].V[CurrentTime] = CurrentTime;
                     Y[i].V[CurrentTime] = Math.Sin(CurrentTime % 90) * 100 * i;
@@ -224,11 +256,7 @@ namespace Charting.Test
             CurrentTime++;
 
         }
-
-
-
         private bool enableEditDrag;
-
         public bool EnableEditDrag
         {
             get { return enableEditDrag; }
@@ -238,10 +266,7 @@ namespace Charting.Test
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("EnableEditDrag"));
             }
         }
-
-
         private int currentTime;
-
         public int CurrentTime
         {
             get { return currentTime; }
@@ -251,9 +276,7 @@ namespace Charting.Test
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CurrentTime"));
             }
         }
-
         private int lastTime;
-
         public int LastTime
         {
             get { return lastTime; }
@@ -398,29 +421,140 @@ namespace Charting.Test
 
         #region XY
 
-        private ObservableCollection<OscillogramWave> x;
+        private ObservableCollection<OscillogramWave> _x;
 
         public ObservableCollection<OscillogramWave> X
         {
-            get { return x; }
+            get { return _x; }
             set
             {
-                x = value;
+                _x = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Y"));
             }
         }
 
-        private ObservableCollection<OscillogramWave> y;
+        private ObservableCollection<OscillogramWave> _y;
 
         public ObservableCollection<OscillogramWave> Y
         {
-            get { return y; }
+            get { return _y; }
             set
             {
-                y = value;
+                _y = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Y"));
             }
         }
         #endregion
+
+        #region Tray
+        double x = 0d;
+        double y = 0d;
+
+        int row = 16;
+        int col = 6;
+        double cellSize = 20d;
+        double radius = 8.5d;
+
+        int plateIndex = 0;
+        private void Init()
+        {
+
+            var panelWidth = (col + 1.5) * cellSize;
+
+            var pane = new Models.Tray(index: plateIndex++, xPanel: x, yPanel: y, panelWidth: panelWidth, rows: row, cols: col, radius, radius, cellSize: cellSize);
+            //pane.CellFont.Color = ColorTranslator.FromHtml("#161616");
+            //pane.CellBorderColor = ColorTranslator.FromHtml("#161616");
+            //pane.CellFont.Color = System.Drawing.Color.Black;
+            //pane.CellColor =ColorTranslator.FromHtml("#0A8066");
+            //pane.CellColor =ColorTranslator.FromHtml("#346166");
+            //pane.CellColor =ColorTranslator.FromHtml("#698D68");
+            Trays.Add(pane);
+
+            x += panelWidth;
+
+            row = 14;
+            col = 5;
+            cellSize = 22.7;
+            radius = 9;
+            panelWidth = (col + 1.5) * cellSize;
+
+            for (int panel = 1; panel < 5; panel++)
+            {
+                pane = new  Tray(index: plateIndex++, xPanel: x, yPanel: y, panelWidth: panelWidth, rows: row, cols: col, radius, radius, cellSize: cellSize);
+                //pane.CellFont.Color = ColorTranslator.FromHtml(htmlColor: "#161616");
+                //pane.Header2.IsVisible = true;
+                Trays.Add(pane);
+                x += panelWidth;
+            }
+
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            row = 14;
+            col = 5;
+            cellSize = 22.7;
+            radius = 9;
+
+            var panelWidth = (col + 1.5) * cellSize;
+
+            var tray0 = new Tray(index: plateIndex++, xPanel: x, yPanel: y, panelWidth: panelWidth, rows: row, cols: col, radius, radius, cellSize: cellSize);
+            Trays.Add(tray0);
+
+            x += panelWidth;
+
+        }
+
+        private void Button_remove_Click(object sender, RoutedEventArgs e)
+        {
+            if (Trays.Any())
+            {
+                var panelWidth = Trays[Trays.Count - 1].PanelWidth;
+                Trays.RemoveAt(Trays.Count - 1);
+                x -= panelWidth;
+                plateIndex--;
+            }
+        }
+        private void TrayCore_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (HeaderMode == TrayHeaderMode.None)
+            {
+                HeaderMode = TrayHeaderMode.Header;
+            }
+            else if (HeaderMode == TrayHeaderMode.Header)
+            {
+                HeaderMode = TrayHeaderMode.Header2;
+            }
+            else
+            {
+                HeaderMode = TrayHeaderMode.None;
+            }
+        }
+        private TrayHeaderMode headerMode = TrayHeaderMode.Header;
+
+        public TrayHeaderMode HeaderMode
+        {
+            get { return headerMode; }
+            set
+            {
+                headerMode = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("HeaderMode"));
+            }
+        }
+
+
+        private void TrayCore_IsCellOver(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is Cell cell)
+            {
+                Trace.WriteLine($"{cell.Name} {DateTime.Now}");
+            }
+            else
+            {
+                Trace.WriteLine("NAN");
+            }
+        }
+        #endregion
+
     }
 }

@@ -13,7 +13,7 @@ namespace Charting.Models
         public DraggableGraphContext()
         {
             DraggableGraph = new();
-            CurrentDraggableGraphType = GraphType.Null;
+            CurrentDraggableGraphType = GraphType.GraphType;
         }
         public bool HasDraggable
         {

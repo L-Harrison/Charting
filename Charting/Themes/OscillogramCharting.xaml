@@ -1,17 +1,22 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ets="clr-namespace:Charting.Extensions"
                     xmlns:local="clr-namespace:Charting">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/ToggleButton.xaml" />
     </ResourceDictionary.MergedDictionaries>
     <local:BoolToVisibleConverter x:Key="BoolToVisibleConverter" />
-    <Color x:Key="ToolBar_BackgroundColor">#F3F3F3</Color>
+    <Color x:Key="ToolBar_BackgroundColor">#FFFFFF</Color>
     <Color x:Key="ToolBar_ForegroundColor">#000000</Color>
+    <Color x:Key="ToggleBtnForegroundColor">#000000</Color>
     <SolidColorBrush x:Key="ToolBar_Background" Color="{DynamicResource ToolBar_BackgroundColor}" />
     <SolidColorBrush x:Key="ToolBar_Foreground" Color="{DynamicResource ToolBar_ForegroundColor}" />
+    <SolidColorBrush x:Key="ToggleBtnForeground" Color="{DynamicResource ToggleBtnForegroundColor}" />
+
+    <Color x:Key="TextColorx">#206864</Color>
+    <SolidColorBrush x:Key="TextColorxx" Color="{DynamicResource TextColorx}" />
+    <!--<SolidColorBrush x:Key="Colorxx" Color="#206864" />-->
     <Style TargetType="{x:Type local:OscillogramCharting}">
-        <Setter Property="Background" Value="{StaticResource ToolBar_Background}" />
-        <Setter Property="Foreground" Value="{StaticResource ToolBar_Foreground}" />
         <Setter Property="GradientShow" Value="True" />
         <Setter Property="RealGradientShow" Value="True" />
         <Setter Property="SpeedShow" Value="True" />
@@ -28,72 +33,39 @@
         <Setter Property="DragX" Value="0" />
         <Setter Property="DragY" Value="0" />
         <Setter Property="Theme" Value="Default" />
-
+        <Setter Property="FontSize" Value="9.5" />
         <Setter Property="Margin" Value="0,5,0,0" />
+        <Setter Property="BorderBrush" Value="Red" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="{DynamicResource ToolBar_Background}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:OscillogramCharting}">
-                    <Grid Background="{DynamicResource ToolBar_Background}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Height="40"
-                                    Background="{DynamicResource ToolBar_Background}"
-                                    Orientation="Horizontal">
-                            <ToggleButton Name="Part_Edit" Width="80" Height="30"
-                                          Margin="5,0,0,0" Content="DragEdit"
-                                          Foreground="{DynamicResource ToolBar_Foreground}"
-                                          IsChecked="{TemplateBinding EnableEditDrag}"
-                                          Visibility="{Binding CanDraggable, Converter={StaticResource BoolToVisibleConverter}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
-                                <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#B060B0" />
-                                    <SolidColorBrush x:Key="Color" Color="#B060B0" />
-                                </ToggleButton.Resources>
-                            </ToggleButton>
-                            <GroupBox Margin="5,-3,0,0"
-                                      Foreground="{DynamicResource ToolBar_Foreground}"
-                                      Header="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
-                                <GroupBox.Style>
-                                    <Style TargetType="GroupBox">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                        <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding EnableEditDrag, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="True" />
-                                                    <Condition Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Gradient" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </MultiDataTrigger>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding EnableEditDrag, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="True" />
-                                                    <Condition Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Speed" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </MultiDataTrigger>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding EnableEditDrag, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="True" />
-                                                    <Condition Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="EndClockLine" />
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Visibility" Value="Visible" />
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </GroupBox.Style>
+                    <Border Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
+                                <ToggleButton Name="Part_Edit" Width="80" Margin="5,0,0,0"
+                                              ets:ToggleButtonHelper.DefaultForeGround="{DynamicResource ToggleBtnForeground}"
+                                              ets:ToggleButtonHelper.TextForeGround="#B060B0" ets:ToggleButtonHelper.ToggleBtnBorderBrush="#B060B0" ets:ToggleButtonHelper.ToggleBtnTxtForeground="#B060B0"
+                                              Content="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}"
+                                              IsChecked="{TemplateBinding EnableEditDrag}"
+                                              Visibility="{Binding CanDraggable, Converter={StaticResource BoolToVisibleConverter}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
                                 <StackPanel Orientation="Horizontal">
                                     <StackPanel.Style>
                                         <Style TargetType="StackPanel">
                                             <Setter Property="Visibility" Value="Collapsed" />
                                             <Style.Triggers>
-                                                <!--<DataTrigger Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Null">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                </DataTrigger>-->
                                                 <DataTrigger Binding="{Binding DragType, StringFormat={}{0}, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" Value="Gradient">
                                                     <Setter Property="Visibility" Value="Visible" />
                                                 </DataTrigger>
@@ -103,24 +75,17 @@
                                             </Style.Triggers>
                                         </Style>
                                     </StackPanel.Style>
+
                                     <RadioButton Name="Part_DragAutoAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
-                                                 Content="AutoRightAgjust"
-                                                 Foreground="{DynamicResource ToolBar_Foreground}"
-                                                 GroupName="DragEdit"
+                                                 Content="AutoRightAgjust" GroupName="DragEdit"
                                                  IsChecked="{Binding AutoRightAdjustEnable, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
                                     <RadioButton Name="Part_DragIntervalAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
-                                                 Content="IntervalAgjust"
-                                                 Foreground="{DynamicResource ToolBar_Foreground}"
-                                                 GroupName="DragEdit"
+                                                 Content="IntervalAgjust" GroupName="DragEdit"
                                                  IsChecked="{Binding IntervalAdjustEnable, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
-                                    <!--<TextBlock Width="50" Margin="15,0,0,0"
-                                               Text="{Binding DragType, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />-->
                                     <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
-                                        <Label Content="X:" Foreground="{DynamicResource ToolBar_Foreground}" />
-                                        <TextBox x:Name="Part_DragX" Width="90" Padding="0,2"
+                                        <TextBlock Margin="5,0" VerticalAlignment="Center" Text="X:" />
+                                        <TextBox x:Name="Part_DragX" MinWidth="40" Padding="0,2"
                                                  VerticalAlignment="Center"
-                                                 Background="{DynamicResource ToolBar_Background}"
-                                                 Foreground="{DynamicResource ToolBar_Foreground}"
                                                  Text="{Binding DragX, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBox.Style>
                                                 <Style TargetType="TextBox">
@@ -138,11 +103,9 @@
                                         </TextBox>
                                     </StackPanel>
                                     <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
-                                        <Label Content="Y:" Foreground="{DynamicResource ToolBar_Foreground}" />
-                                        <TextBox x:Name="Part_DragY" Width="90" Padding="0,2"
+                                        <TextBlock Margin="5,0" VerticalAlignment="Center" Text="Y:" />
+                                        <TextBox x:Name="Part_DragY" MinWidth="40" Padding="0,2"
                                                  VerticalAlignment="Center"
-                                                 Background="{DynamicResource ToolBar_Background}"
-                                                 Foreground="{DynamicResource ToolBar_Foreground}"
                                                  Text="{Binding DragY, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBox.Style>
                                                 <Style TargetType="TextBox">
@@ -159,155 +122,131 @@
                                             </TextBox.Style>
                                         </TextBox>
                                     </StackPanel>
-
                                 </StackPanel>
-                            </GroupBox>
-                            <!--<Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray" BorderThickness="1" />-->
-                        </StackPanel>
-                        <!--#region ColorShowSource-->
-                        <ItemsControl ItemsSource="{TemplateBinding ColorShowSource}" Visibility="Collapsed">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Rectangle Width="10" Height="10" Margin="5,0"
-                                               Fill="{Binding}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                        <!--#endregion-->
-                        <StackPanel Grid.Column="1" Height="40"
-                                    Background="{DynamicResource ToolBar_Background}"
-                                    Orientation="Horizontal">
-
-                            <ToggleButton Name="Part_Gradient" Height="30" Margin="5,0,0,0"
-                                          Content="Gra"
-                                          Foreground="{DynamicResource ToolBar_Foreground}"
-                                          IsChecked="{TemplateBinding GradientShow}">
-                                <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#206864" />
-                                    <SolidColorBrush x:Key="Color" Color="#206864" />
-                                </ToggleButton.Resources>
-                            </ToggleButton>
-                            <ToggleButton Name="Part_RealGradient" Height="30" Margin="5,0,0,0"
-                                          Content="RealGra"
-                                          Foreground="{DynamicResource ToolBar_Foreground}"
-                                          IsChecked="{TemplateBinding RealGradientShow}">
-                                <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#AF231C" />
-                                    <SolidColorBrush x:Key="Color" Color="#AF231C" />
-                                </ToggleButton.Resources>
-                            </ToggleButton>
-                            <Border Height="30" Margin="4,8" HorizontalAlignment="Center"
-                                    BorderBrush="Gray" BorderThickness="1" />
-                            <ToggleButton Name="Part_Speed" Height="30" Margin="5,0,0,0"
-                                          Content="Speed"
-                                          Foreground="{DynamicResource ToolBar_Foreground}"
-                                          IsChecked="{TemplateBinding SpeedShow}">
-                                <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#FF7F50" />
-                                    <SolidColorBrush x:Key="Color" Color="#FF7F50" />
-                                </ToggleButton.Resources>
-                            </ToggleButton>
-                            <ToggleButton Name="Part_RealSpeed" Height="30" Margin="5,0,0,0"
-                                          Content="RealSpeed"
-                                          Foreground="{DynamicResource ToolBar_Foreground}"
-                                          IsChecked="{TemplateBinding RealSpeedShow}">
-                                <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#2F4F4F" />
-                                    <SolidColorBrush x:Key="Color" Color="#2F4F4F" />
-                                </ToggleButton.Resources>
-                            </ToggleButton>
-                            <Border Height="30" Margin="4,8" HorizontalAlignment="Center"
-                                    BorderBrush="Gray" BorderThickness="1" />
-                            <ToggleButton Name="Part_Pressure" Height="30" Margin="5,0,0,0"
-                                          Content="Pressure"
-                                          Foreground="{DynamicResource ToolBar_Foreground}"
-                                          IsChecked="{TemplateBinding PressureShow}">
-                                <ToggleButton.Resources>
-                                    <SolidColorBrush x:Key="TextColor" Color="#0076F6" />
-                                    <SolidColorBrush x:Key="Color" Color="#0076F6" />
-                                </ToggleButton.Resources>
-                            </ToggleButton>
-                            <Border Height="30" Margin="4,8" HorizontalAlignment="Center"
-                                    BorderBrush="Gray" BorderThickness="1" />
-                            <ListView Name="Part_Graph" Grid.Column="7" MaxWidth="500"
-                                      Margin="0,0,40,0" Background="Transparent" BorderThickness="0"
-                                      ItemsSource="{TemplateBinding Waves}"
-                                      ScrollViewer.HorizontalScrollBarVisibility="Auto" SelectedItem="" SelectionMode="Multiple">
-                                <ListView.ItemsPanel>
+                            </StackPanel>
+                            <!--#region ColorShowSource-->
+                            <ItemsControl ItemsSource="{TemplateBinding ColorShowSource}" Visibility="Collapsed">
+                                <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal" />
                                     </ItemsPanelTemplate>
-                                </ListView.ItemsPanel>
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem">
-                                        <Setter Property="IsSelected" Value="{Binding IsSelected}" />
-                                        <Setter Property="Background" Value="Transparent" />
-                                        <Setter Property="Padding" Value="2,0" />
-                                        <Setter Property="Margin" Value="2,0" />
-                                        <Setter Property="TextElement.Foreground" Value="{Binding Color}" />
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="ListViewItem">
-                                                    <Border x:Name="Bd" Height="30"
-                                                            Padding="{TemplateBinding Padding}"
-                                                            Background="{TemplateBinding Background}"
-                                                            BorderBrush="{TemplateBinding BorderBrush}"
-                                                            BorderThickness="{TemplateBinding BorderThickness}"
-                                                            CornerRadius="5" SnapsToDevicePixels="true">
-                                                        <ContentPresenter x:Name="ContentPresenter"
-                                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="Bd" Property="BorderBrush" Value="Transparent" />
-                                                            <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
-                                                            <Setter TargetName="ContentPresenter" Property="TextElement.Foreground" Value="{Binding Color}" />
-                                                            <Setter Property="Cursor" Value="Hand" />
-                                                        </Trigger>
-                                                        <Trigger Property="IsSelected" Value="True">
-                                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{Binding Color}" />
-                                                            <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
-                                                            <Setter TargetName="ContentPresenter" Property="TextElement.Foreground" Value="{Binding Color}" />
-                                                        </Trigger>
-                                                        <MultiTrigger>
-                                                            <MultiTrigger.Conditions>
-                                                                <Condition Property="IsSelected" Value="True" />
-                                                                <Condition Property="IsMouseOver" Value="True" />
-                                                            </MultiTrigger.Conditions>
-                                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{Binding Color}" />
-                                                            <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
-                                                            <Setter Property="Cursor" Value="Hand" />
-                                                            <Setter TargetName="ContentPresenter" Property="TextElement.Foreground" Value="#FF000000" />
-                                                        </MultiTrigger>
-                                                        <Trigger Property="IsEnabled" Value="False">
-                                                            <Setter TargetName="Bd" Property="Opacity" Value="0.55" />
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                                <ListView.ItemTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Background="Transparent" Text="{Binding Decription}" />
+                                        <Rectangle Width="10" Height="10" Margin="5,0"
+                                                   Fill="{Binding}" />
                                     </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                        </StackPanel>
-                        <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="LightGray"
-                                BorderThickness="0,1,0,0">
-                            <local:OscillogramChartingCore x:Name="Part_OscillogramChartingCore" />
-                        </Border>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <!--#endregion-->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
 
-                    </Grid>
+                                <ToggleButton Name="Part_Gradient" Margin="5,0,0,0" HorizontalContentAlignment="Center"
+                                              ets:ToggleButtonHelper.DefaultForeGround="{DynamicResource ToggleBtnForeground}"
+                                              ets:ToggleButtonHelper.TextForeGround="#206864" ets:ToggleButtonHelper.ToggleBtnBorderBrush="#206864" ets:ToggleButtonHelper.ToggleBtnTxtForeground="#206864"
+                                              Content="Gra"
+                                              IsChecked="{TemplateBinding GradientShow}" />
+                                <ToggleButton Name="Part_RealGradient" Margin="5,0,0,0"
+                                              ets:ToggleButtonHelper.DefaultForeGround="{DynamicResource ToggleBtnForeground}"
+                                              ets:ToggleButtonHelper.TextForeGround="#AF231C" ets:ToggleButtonHelper.ToggleBtnBorderBrush="#AF231C" ets:ToggleButtonHelper.ToggleBtnTxtForeground="#AF231C"
+                                              Content="RealGra"
+                                              IsChecked="{TemplateBinding RealGradientShow}" />
+                                <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
+                                        BorderThickness="1" />
+                                <ToggleButton Name="Part_Speed" Margin="5,0,0,0"
+                                              ets:ToggleButtonHelper.DefaultForeGround="{DynamicResource ToggleBtnForeground}"
+                                              ets:ToggleButtonHelper.TextForeGround="#FF7F50" ets:ToggleButtonHelper.ToggleBtnBorderBrush="#FF7F50" ets:ToggleButtonHelper.ToggleBtnTxtForeground="#FF7F50"
+                                              Content="Speed"
+                                              IsChecked="{TemplateBinding SpeedShow}" />
+                                <ToggleButton Name="Part_RealSpeed" Margin="5,0,0,0"
+                                              ets:ToggleButtonHelper.DefaultForeGround="{DynamicResource ToggleBtnForeground}"
+                                              ets:ToggleButtonHelper.TextForeGround="#2F4F4F" ets:ToggleButtonHelper.ToggleBtnBorderBrush="#2F4F4F" ets:ToggleButtonHelper.ToggleBtnTxtForeground="#2F4F4F"
+                                              Content="RealSpeed"
+                                              IsChecked="{TemplateBinding RealSpeedShow}" />
+                                <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
+                                        BorderThickness="1" />
+                                <ToggleButton Name="Part_Pressure" Margin="5,0,0,0"
+                                              ets:ToggleButtonHelper.DefaultForeGround="{DynamicResource ToggleBtnForeground}"
+                                              ets:ToggleButtonHelper.TextForeGround="#0076F6" ets:ToggleButtonHelper.ToggleBtnBorderBrush="#0076F6" ets:ToggleButtonHelper.ToggleBtnTxtForeground="#0076F6"
+                                              Content="Pressure"
+                                              IsChecked="{TemplateBinding PressureShow}" />
+                                <Border Margin="4,8" HorizontalAlignment="Center" BorderBrush="Gray"
+                                        BorderThickness="1" />
+                                <ListView Name="Part_Graph" Grid.Column="7" MaxWidth="150"
+                                          Margin="0,0,40,0" Background="Transparent" BorderThickness="0"
+                                          ItemsSource="{TemplateBinding Waves}"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Auto" SelectedItem="" SelectionMode="Multiple"
+                                          Visibility="Visible">
+                                    <ListView.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ListView.ItemsPanel>
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="Padding" Value="2,0" />
+                                            <Setter Property="Margin" Value="2,0" />
+                                            <Setter Property="TextElement.Foreground" Value="{Binding Color}" />
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListViewItem">
+                                                        <Border x:Name="Bd"
+                                                                Padding="{TemplateBinding Padding}"
+                                                                Background="{TemplateBinding Background}"
+                                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                                CornerRadius="5" SnapsToDevicePixels="true">
+                                                            <ContentPresenter x:Name="ContentPresenter"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bd" Property="BorderBrush" Value="Transparent" />
+                                                                <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
+                                                                <Setter TargetName="ContentPresenter" Property="TextElement.Foreground" Value="{Binding Color}" />
+                                                                <Setter Property="Cursor" Value="Hand" />
+                                                            </Trigger>
+                                                            <Trigger Property="IsSelected" Value="True">
+                                                                <Setter TargetName="Bd" Property="BorderBrush" Value="{Binding Color}" />
+                                                                <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
+                                                                <Setter TargetName="ContentPresenter" Property="TextElement.Foreground" Value="{Binding Color}" />
+                                                            </Trigger>
+                                                            <MultiTrigger>
+                                                                <MultiTrigger.Conditions>
+                                                                    <Condition Property="IsSelected" Value="True" />
+                                                                    <Condition Property="IsMouseOver" Value="True" />
+                                                                </MultiTrigger.Conditions>
+                                                                <Setter TargetName="Bd" Property="BorderBrush" Value="{Binding Color}" />
+                                                                <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
+                                                                <Setter Property="Cursor" Value="Hand" />
+                                                                <Setter TargetName="ContentPresenter" Property="TextElement.Foreground" Value="#FF000000" />
+                                                            </MultiTrigger>
+                                                            <Trigger Property="IsEnabled" Value="False">
+                                                                <Setter TargetName="Bd" Property="Opacity" Value="0.55" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Background="Transparent" Text="{Binding Decription}" />
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+                            <Border Grid.Row="1" Grid.ColumnSpan="2">
+                                <local:OscillogramChartingCore x:Name="Part_OscillogramChartingCore" />
+                            </Border>
+
+                        </Grid>
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

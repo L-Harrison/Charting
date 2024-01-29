@@ -6,6 +6,7 @@
         <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/OscillogramCharting.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/OscillogramChartingCore.xaml" />
         <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/ScrollViewStyle.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/Charting;component/Themes/TrayCore.xaml" />
 
     </ResourceDictionary.MergedDictionaries>
 
