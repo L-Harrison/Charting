@@ -61,7 +61,6 @@ namespace Charting
         public const int AllNumConst = 86400;
         private const double hitTestStep = 10;
 
-
         private System.Windows.Threading.DispatcherTimer _updateDataTimer;
         private System.Windows.Threading.DispatcherTimer _updateGradientDataTimer;
         private System.Windows.Threading.DispatcherTimer _updateRealGradientDataTimer;
@@ -69,9 +68,7 @@ namespace Charting
         private System.Windows.Threading.DispatcherTimer _updateRealSpeedDataTimer;
         private System.Windows.Threading.DispatcherTimer _updatePressureDataTimer;
         private System.Windows.Threading.DispatcherTimer _renderTimer;
-
         private OscillogramChartingCore Oscill;
-
         #region dp
 
         #region Configuration settings
@@ -128,7 +125,7 @@ namespace Charting
                //((OscillogramCharting)d).BackGround = solidBrushM;
 
 
-               var btnForegroundColor = System.Windows.Media.Color.FromArgb(style.TitleFontColor.A, style.TitleFontColor.R, style.TickLabelColor.G, style.TickLabelColor.B);;
+               var btnForegroundColor = System.Windows.Media.Color.FromArgb(style.TitleFontColor.A, style.TitleFontColor.R, style.TickLabelColor.G, style.TickLabelColor.B); ;
                var btnForegroundBrush = new SolidColorBrush(btnForegroundColor);
                //((OscillogramCharting)d).BackGround = solidBrushM;
 
@@ -139,7 +136,7 @@ namespace Charting
 
                Application.Current.Resources["ToggleBtnForeground"] = btnForegroundBrush;
 
-               var r=ToggleButtonHelper.DefaultForeGroundProperty;
+               var r = ToggleButtonHelper.DefaultForeGroundProperty;
 
            }));
 
@@ -190,7 +187,6 @@ namespace Charting
         #endregion
 
         #region base data
-
 
         public bool CanDraggable
         {
@@ -552,6 +548,11 @@ namespace Charting
         private static void OnLastTimeIndexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             //((OscillogramCharting)d).Initilize();
+            if (((OscillogramCharting)d).Oscill == null)
+            {
+                ((OscillogramCharting)d).hasInitilized = false;
+                return;
+            }
             ((OscillogramCharting)d).ResetSpeed();
             ((OscillogramCharting)d).ResetRealSpeed();
             ((OscillogramCharting)d).ResetGradient();
@@ -562,7 +563,10 @@ namespace Charting
             ((OscillogramCharting)d).ResetSpectrum();
 
             ((OscillogramCharting)d).ResetPeaks();
+
+            ((OscillogramCharting)d).hasInitilized = true;
         }
+        bool hasInitilized = false;
 
         /// <summary>
         /// 梯度点数
@@ -801,7 +805,8 @@ namespace Charting
             DependencyProperty.Register("GradientY", typeof(double[]), typeof(OscillogramCharting), new PropertyMetadata(new double[2], OnGradientChanged));
         private static void OnGradientChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((OscillogramCharting)d).ResetGradient();
+            if (((OscillogramCharting)d).hasInitilized)
+                ((OscillogramCharting)d).ResetGradient();
         }
         #endregion
 
@@ -829,7 +834,8 @@ namespace Charting
 
         private static void OnSpeedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((OscillogramCharting)d).ResetSpeed();
+            if (((OscillogramCharting)d).hasInitilized)
+                ((OscillogramCharting)d).ResetSpeed();
         }
         #endregion
 
@@ -865,7 +871,8 @@ namespace Charting
                     throw new ArgumentException("The array length does not match 'OscillogramCharting.AllNumConst' ");
                 }
             }
-            ((OscillogramCharting)d).ResetRealSpeed();
+            if (((OscillogramCharting)d).hasInitilized)
+                ((OscillogramCharting)d).ResetRealSpeed();
         }
         #endregion
 
@@ -899,7 +906,8 @@ namespace Charting
                     throw new ArgumentException("The array length does not match 'OscillogramCharting.AllNumConst' ");
                 }
             }
-            ((OscillogramCharting)d).ResetRealGradient();
+            if (((OscillogramCharting)d).hasInitilized)
+                ((OscillogramCharting)d).ResetRealGradient();
         }
         #endregion
 
@@ -933,7 +941,8 @@ namespace Charting
                     throw new ArgumentException("The array length does not match 'OscillogramCharting.AllNumConst' ");
                 }
             }
-            ((OscillogramCharting)d).ResetPressure();
+            if (((OscillogramCharting)d).hasInitilized)
+                ((OscillogramCharting)d).ResetPressure();
         }
         #endregion
 
@@ -949,8 +958,6 @@ namespace Charting
         public static readonly DependencyProperty XsProperty =
             DependencyProperty.Register("Xs", typeof(ObservableCollection<OscillogramWave>), typeof(OscillogramCharting), new PropertyMetadata(new ObservableCollection<OscillogramWave>(), OnOscillogramChanged));
 
-
-
         public ObservableCollection<OscillogramWave> Ys
         {
             get { return (ObservableCollection<OscillogramWave>)GetValue(YsProperty); }
@@ -960,7 +967,6 @@ namespace Charting
         // Using a DependencyProperty as the backing store for Ys.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty YsProperty =
             DependencyProperty.Register("Ys", typeof(ObservableCollection<OscillogramWave>), typeof(OscillogramCharting), new PropertyMetadata(new ObservableCollection<OscillogramWave>(), OnOscillogramChanged));
-
 
         private static void OnOscillogramChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -973,16 +979,16 @@ namespace Charting
                     {
                         throw new ArgumentException("The array length does not match 'OscillogramCharting.AllNumConst' ");
                     }
-                    ((OscillogramCharting)d).ResetSpectrum();
+                    //if (((OscillogramCharting)d).hasInitilized)
+                        ((OscillogramCharting)d).ResetSpectrum();
                 };
             }
-            ((OscillogramCharting)d).ResetSpectrum();
+            if (((OscillogramCharting)d).hasInitilized)
+                ((OscillogramCharting)d).ResetSpectrum();
         }
 
         #endregion
-
         #endregion
-
         #endregion
 
         #region Axis
@@ -1052,9 +1058,8 @@ namespace Charting
             DefaultStyleKeyProperty.OverrideMetadata(typeof(OscillogramCharting), new FrameworkPropertyMetadata(typeof(OscillogramCharting)));
         }
 
-        public OscillogramCharting()
+        public OscillogramCharting() : base()
         {
-
             _updateDataTimer = new DispatcherTimer();
             _updateDataTimer.Interval = TimeSpan.FromMilliseconds(1); ;
             _updateDataTimer.Tick += UpdateData;
@@ -1103,7 +1108,21 @@ namespace Charting
             if (GetTemplateChild(OscillogramChartingCoreName) is OscillogramChartingCore oscillogramChartingCore)
             {
                 this.Oscill = oscillogramChartingCore;
+
                 Initilize();
+                if (!hasInitilized)
+                {
+                    ResetSpeed();
+                    ResetRealSpeed();
+                    ResetGradient();
+                    ResetRealGradient();
+                    ResetPressure();
+                    ResetEndClockLine();
+                    ResetCurrentLine();
+                    ResetSpectrum();
+                    ResetPeaks();
+                }
+
             }
             if (GetTemplateChild(OscillogramChartingCore.GradientName) is ToggleButton toggleButton)
             {
@@ -1283,7 +1302,7 @@ namespace Charting
             Oscill.Plot.XLabel("TimeSpan (min)");
             Oscill.Plot.XAxis.LabelStyle(fontSize: 11, rotation: 0);
             Oscill.Plot.XAxis.TickLabelFormat(_ => (Math.Round(_ / 60, 1)).ToString());
-            Oscill.Plot.XAxis.TickLabelStyle( fontSize: 10);
+            Oscill.Plot.XAxis.TickLabelStyle(fontSize: 10);
             Oscill.Plot.YAxis.IsVisible = true;
             Oscill.Plot.Grid(false);
 
@@ -1291,7 +1310,7 @@ namespace Charting
             yAixs = Oscill.Plot.YAxis;
             yAixs.Label("Spectrum");
             yAixs.LabelStyle(fontSize: 11, rotation: 0);
-            yAixs.TickLabelStyle( fontSize: 9);
+            yAixs.TickLabelStyle(fontSize: 9);
             //yAixs.Color(ColorTranslator.FromHtml("#252526"));
             yAixs.IsVisible = true;
             //yAixs.SetZoomOutLimit(3000);
@@ -1390,13 +1409,13 @@ namespace Charting
                 {
                     if (!Oscill.CurrentDraggableGraph.DraggableGraph.Contains(dr))
                     {
-                        Oscill. CurrentDraggableGraph.DraggableGraph.Add(dr);
+                        Oscill.CurrentDraggableGraph.DraggableGraph.Add(dr);
                     }
                     if (Oscill.CurrentDraggableGraph.CurrentDraggableGraph != dr)
                     {
                         Oscill.CurrentDraggableGraph.CurrentDraggableGraph = dr!;
                         if (dr is IGraphType graphType)
-                            Oscill. CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
+                            Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = graphType.GraphType;
                         else
                             Oscill.CurrentDraggableGraph.CurrentDraggableGraphType = GraphType.GraphType;
                     }
@@ -1537,7 +1556,7 @@ namespace Charting
             Waves.Clear();
             //Xs.Clear();
             //Ys.Clear();
-            if (Xs.Count() != Ys.Count())
+            if (Oscill==null||Xs.Count() != Ys.Count())
                 return;
             for (int i = 0; i < Xs.Count; i++)
             {
@@ -1565,9 +1584,7 @@ namespace Charting
                 scatter.IsVisible = Xs[i].IsSelected;
                 scatter.Label = Xs[i].Decription;
                 //404 750
-
                 scatterSpectrum[Xs[i]] = scatter;
-
 
             }
         }

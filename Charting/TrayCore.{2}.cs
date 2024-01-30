@@ -218,7 +218,8 @@ namespace Charting
         public void ReplacePlotBitmap(System.Drawing.Bitmap bmp)
         {
             PlotBitmap = new WriteableBitmap(BmpImageFromBmp(bmp));
-            PlotImage.Source = PlotBitmap;
+            if (PlotImage != null)
+                PlotImage.Source = PlotBitmap;
         }
 
         /// <summary>

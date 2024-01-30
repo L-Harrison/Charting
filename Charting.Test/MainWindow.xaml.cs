@@ -34,6 +34,7 @@ namespace Charting.Test
         {
             InitializeComponent();
             this.DataContext = this;
+            this.charting.DataContext = this;
             DispatcherTimer timer = new DispatcherTimer();
             timer.Interval = TimeSpan.FromMilliseconds(200);
             timer.Tick += Timer_Tick;
@@ -423,7 +424,7 @@ namespace Charting.Test
 
         #region XY
 
-        private ObservableCollection<OscillogramWave> _x;
+        private ObservableCollection<OscillogramWave> _x=new ObservableCollection<OscillogramWave>();
 
         public ObservableCollection<OscillogramWave> X
         {
@@ -431,11 +432,11 @@ namespace Charting.Test
             set
             {
                 _x = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Y"));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("X"));
             }
         }
 
-        private ObservableCollection<OscillogramWave> _y;
+        private ObservableCollection<OscillogramWave> _y = new ObservableCollection<OscillogramWave>();
 
         public ObservableCollection<OscillogramWave> Y
         {

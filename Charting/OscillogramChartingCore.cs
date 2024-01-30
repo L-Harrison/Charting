@@ -600,11 +600,12 @@ namespace Charting
                     }
                     if (e.ClickCount == 2)
                     {
-                        if (e.LeftButton == MouseButtonState.Pressed)
-                        {
-                            isHighRefresh = !isHighRefresh;
-                        }
-                        else
+                        //if (Keyboard.GetKeyStates(Key.LeftCtrl)== KeyStates.Toggled)
+                        //{
+                        //    isHighRefresh = !isHighRefresh;
+                        //    return;
+                        //}
+                        //else
                         {
                             var ht = Plot.GetHittable(pixelX, pixelY);
                             if (ht != null)
