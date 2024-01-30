@@ -22,6 +22,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -1279,15 +1280,18 @@ namespace Charting
 
             Oscill.Theme = Theme;
             Oscill.Crosshair = Oscill.Plot.AddCrosshair(0, 0);
-            Oscill.Plot.XLabel("TimeSpan (max)");
+            Oscill.Plot.XLabel("TimeSpan (min)");
+            Oscill.Plot.XAxis.LabelStyle(fontSize: 11, rotation: 0);
             Oscill.Plot.XAxis.TickLabelFormat(_ => (Math.Round(_ / 60, 1)).ToString());
+            Oscill.Plot.XAxis.TickLabelStyle( fontSize: 10);
             Oscill.Plot.YAxis.IsVisible = true;
             Oscill.Plot.Grid(false);
 
             xAxis = Oscill.Plot.XAxis;
             yAixs = Oscill.Plot.YAxis;
             yAixs.Label("Spectrum");
-            yAixs.LabelStyle(fontSize: 13, rotation: 0);
+            yAixs.LabelStyle(fontSize: 11, rotation: 0);
+            yAixs.TickLabelStyle( fontSize: 9);
             //yAixs.Color(ColorTranslator.FromHtml("#252526"));
             yAixs.IsVisible = true;
             //yAixs.SetZoomOutLimit(3000);
@@ -1295,22 +1299,25 @@ namespace Charting
 
             yAixsGradient = Oscill.Plot.AddAxis(ScottPlot.Renderable.Edge.Left);
             yAixsGradient.Label("Mobile Phase");
-            yAixsGradient.LabelStyle(fontSize: 13, rotation: 0);
+            yAixsGradient.LabelStyle(fontSize: 11, rotation: 0);
             yAixsGradient.Color(ColorTranslator.FromHtml("#B060B0"));
+            yAixsGradient.TickLabelStyle(ColorTranslator.FromHtml("#B060B0"), fontSize: 9);
             yAixsGradient.IsVisible = GradientShow || RealGradientShow;
             //yAixsGradient.SetSizeLimit(max: 0, max: 110);
 
             yAixsSpeed = Oscill.Plot.AddAxis(ScottPlot.Renderable.Edge.Right);
             yAixsSpeed.Label("Speed");
-            yAixsSpeed.LabelStyle(fontSize: 13, rotation: 0);
+            yAixsSpeed.LabelStyle(fontSize: 11, rotation: 0);
             yAixsSpeed.Color(ColorTranslator.FromHtml("#006400"));
+            yAixsSpeed.TickLabelStyle(ColorTranslator.FromHtml("#006400"), fontSize: 9);
             yAixsSpeed.IsVisible = SpeedShow || RealSpeedShow;
             //yAixsSpeed.SetSizeLimit(max: 0, max: 200);
 
             yAixsPressure = Oscill.Plot.AddAxis(ScottPlot.Renderable.Edge.Right);
             yAixsPressure.Label("Pressure");
-            yAixsPressure.LabelStyle(fontSize: 13, rotation: 0);
+            yAixsPressure.LabelStyle(fontSize: 11, rotation: 0);
             yAixsPressure.Color(ColorTranslator.FromHtml("#0076F6"));
+            yAixsPressure.TickLabelStyle(ColorTranslator.FromHtml("#0076F6"), fontSize: 9);
             yAixsPressure.IsVisible = PressureShow;
             //yAixsPressure.SetSizeLimit(max: 0, max: 50);
             //yAixsPressure.SetZoomOutLimit(50);
@@ -1318,7 +1325,8 @@ namespace Charting
 
             Oscill.Crosshair.VerticalLine.PositionFormatter = _ => $"{_:f1} s";
             Oscill.Crosshair.LineColor = System.Drawing.Color.Green;
-      
+
+            Oscill.Plot.Legend(false);
 
             //Oscill.RightClicked -= Oscill.DefaultRightClickEvent!;
             //Oscill.RightClicked += Oscill_RightClicked;
@@ -1425,11 +1433,20 @@ namespace Charting
             scatterrEndTimeLine.DragEnabled = EnableEditDrag;
             scatterrEndTimeLine.LineStyle = LineStyle.Dot;
             scatterrEndTimeLine.PositionLabel = true;
-            scatterrEndTimeLine.PositionLabelBackground = System.Drawing.Color.LightGray;
+            //scatterrEndTimeLine.PositionLabelBackground = System.Drawing.Color.LightGray;
+            scatterrEndTimeLine.PositionLabelBackground = System.Drawing.Color.Gray;
+            //scatterrEndTimeLine.PositionLabelFont.Color = ColorTranslator.FromHtml(htmlColor: "#000000");
+            scatterrEndTimeLine.PositionLabelFont.Size = 11;
+            scatterrEndTimeLine.PositionLabelFont.Bold = false;
+
+            //scatterCurrentTimeLine.PositionLabelBackground = System.Drawing.Color.Transparent;
+            //scatterCurrentTimeLine.PositionLabelFont.Color = ColorTranslator.FromHtml(htmlColor: "#000000");
+
+
             scatterrEndTimeLine.PositionLabelOppositeAxis = true;
             scatterrEndTimeLine.PositionFormatter = (x) =>
             {
-                return $"TotalTime={(x / 60):F1}min";
+                return $"{(x / 60):F1} min(End)";
             };
             scatterrEndTimeLine.DragSnap = new ScottPlot.SnapLogic.Independent2D(SnapCustom, SnapDisabled);
             scatterrEndTimeLine.DragLimitMin = 0;
@@ -1570,10 +1587,16 @@ namespace Charting
             scatterCurrentTimeLine.LineStyle = LineStyle.Dot;
             scatterCurrentTimeLine.PositionLabel = true;
             scatterCurrentTimeLine.PositionLabelBackground = System.Drawing.Color.Gray;
+
+            //scatterCurrentTimeLine.PositionLabelBackground = System.Drawing.Color.Transparent;
+            //scatterCurrentTimeLine.PositionLabelFont.Color = ColorTranslator.FromHtml(htmlColor: "#000000");
+            scatterCurrentTimeLine.PositionLabelFont.Size = 11;
+            scatterCurrentTimeLine.PositionLabelFont.Bold = false;
+
             scatterCurrentTimeLine.PositionLabelOppositeAxis = true;
             scatterCurrentTimeLine.PositionFormatter = (x) =>
             {
-                return $"CurrentTime={(x / 60):F1}min";
+                return $"{(x / 60):F1} min";
             };
             scatterCurrentTimeLine.DragSnap = new ScottPlot.SnapLogic.Independent2D(SnapCustom, SnapDisabled);
             scatterCurrentTimeLine.DragLimitMin = 0;

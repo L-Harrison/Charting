@@ -65,7 +65,7 @@ namespace Charting
         private float ScaledWidth => (float)(ActualWidth * Configuration.DpiStretchRatio);
         private float ScaledHeight => (float)(ActualHeight * Configuration.DpiStretchRatio);
         internal bool AutoZoom { set; get; } = true;
-        internal bool isHighRefresh = true;
+        internal bool isHighRefresh = false;
 
 
         #region Draggable
@@ -77,8 +77,8 @@ namespace Charting
         }
         // Using a DependencyProperty as the backing store for CurrentDraggableGraph.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty CurrentDraggableGraphProperty =
-            DependencyProperty.Register("CurrentDraggableGraph", typeof(DraggableGraphContext), typeof(OscillogramChartingCore), new PropertyMetadata(new DraggableGraphContext()));        
-    
+            DependencyProperty.Register("CurrentDraggableGraph", typeof(DraggableGraphContext), typeof(OscillogramChartingCore), new PropertyMetadata(new DraggableGraphContext()));
+
         internal IDraggable GetDraggable(double xPixel, double yPixel, int snapDistancePixels = 5)
         {
             var settings = Plot.GetSettings();
@@ -277,7 +277,7 @@ namespace Charting
 
                 ((OscillogramChartingCore)d).Backend.Plot.Style(style);
 
-             
+
 
             }));
 
@@ -316,6 +316,7 @@ namespace Charting
         }
         public virtual void AutoRender(bool lowQuality = false)
         {
+            //lowQuality = false;
             if (AutoZoom)
             {
                 Plot.AxisAuto();
@@ -572,20 +573,19 @@ namespace Charting
                 {
                     //Mouse.Capture(contentControl);
                     Crosshair.IsVisible = true;
-                    //isHighRefresh = true;
+                    isHighRefresh = !isHighRefresh;
                     base.OnMouseEnter(e);
                 };
                 contentControl.MouseLeave += (sender, e) =>
                 {
                     Crosshair.IsVisible = false;
-                    //isHighRefresh = false;
+                    isHighRefresh = !isHighRefresh;
                     //if (Mouse.Captured == contentControl)
                     //    Mouse.Capture(null);
                     base.OnMouseLeave(e);
                 };
                 contentControl.MouseLeftButtonDown += (object sender, MouseButtonEventArgs e) =>
                 {
-                    Trace.WriteLine(e.ClickCount);
 
                     (double coordinateX, double coordinateY) = GetMouseCoordinates(0, 0);
                     var pixelX = e.MouseDevice.GetPosition(this).X;
@@ -600,16 +600,23 @@ namespace Charting
                     }
                     if (e.ClickCount == 2)
                     {
-
-                        var ht = Plot.GetHittable(pixelX, pixelY);
-                        if (ht != null)
+                        if (e.LeftButton == MouseButtonState.Pressed)
                         {
+                            isHighRefresh = !isHighRefresh;
                         }
                         else
                         {
-                            UpdateDraggable(dr!);
+                            var ht = Plot.GetHittable(pixelX, pixelY);
+                            if (ht != null)
+                            {
+                            }
+                            else
+                            {
+                                UpdateDraggable(dr!);
+                            }
+                            DraggableUpdatedHandler?.Invoke(sender, CurrentDraggableGraph);
                         }
-                        DraggableUpdatedHandler?.Invoke(sender, CurrentDraggableGraph);
+                        
                     }
                     else
                     {

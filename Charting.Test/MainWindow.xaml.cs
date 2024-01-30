@@ -176,6 +176,8 @@ namespace Charting.Test
         int wave = 451;
         private void Timer_Tick1(object? sender, EventArgs e)
         {
+            if (wave >455)
+                return;
             var x = new double[LastTime];
             var y = new double[LastTime];
             for (int i = 0; i < LastTime; i++)

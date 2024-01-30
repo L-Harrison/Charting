@@ -21,7 +21,7 @@
             <ColumnDefinition />
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
-        <Border Grid.ColumnSpan="2" />
+        <Border Grid.ColumnSpan="2" Background="Red"/>
         <charting:OscillogramCharting Grid.Row="1" CanDraggable="True" ConfigurationGradientMax="100"
                                       ConfigurationGradientMin="0" ConfigurationSpeedMax="200" ConfigurationSpeedMin="0"
                                       CurrentTimeIndex="{Binding CurrentTime}"

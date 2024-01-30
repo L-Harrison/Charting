@@ -107,7 +107,7 @@ namespace Charting.Extensions
                    yRadius: tray.YRadius,
                    size: 11,
                    fontColor: plot.GetLabeColor(plot.GetSettings().DataBackground.Color)?.TickLabelColor,
-                   color: ColorTranslator.FromHtml("#17BECF"),
+                   color: ColorTranslator.FromHtml("#38b2ce"),
                    borderColor: ColorTranslator.FromHtml(htmlColor: "#000000"),
                    lineWidth: 1,
                    default);

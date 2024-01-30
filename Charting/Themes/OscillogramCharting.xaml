@@ -77,15 +77,23 @@
                                     </StackPanel.Style>
 
                                     <RadioButton Name="Part_DragAutoAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
-                                                 Content="AutoRightAgjust" GroupName="DragEdit"
+                                                 Content="AutoRightAgjust"
+                                                 Foreground="{DynamicResource ToggleBtnForeground}"
+                                                 GroupName="DragEdit"
                                                  IsChecked="{Binding AutoRightAdjustEnable, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
                                     <RadioButton Name="Part_DragIntervalAgjust" Margin="5,0,0,0" VerticalAlignment="Center"
-                                                 Content="IntervalAgjust" GroupName="DragEdit"
+                                                 Content="IntervalAgjust"
+                                                 Foreground="{DynamicResource ToggleBtnForeground}"
+                                                 GroupName="DragEdit"
                                                  IsChecked="{Binding IntervalAdjustEnable, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}" />
                                     <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
-                                        <TextBlock Margin="5,0" VerticalAlignment="Center" Text="X:" />
+                                        <TextBlock Margin="5,0" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource ToggleBtnForeground}"
+                                                   Text="X:" />
                                         <TextBox x:Name="Part_DragX" MinWidth="40" Padding="0,2"
                                                  VerticalAlignment="Center"
+                                                 Background="{DynamicResource ToolBar_Background}"
+                                                 Foreground="{DynamicResource ToggleBtnForeground}"
                                                  Text="{Binding DragX, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBox.Style>
                                                 <Style TargetType="TextBox">
@@ -103,9 +111,13 @@
                                         </TextBox>
                                     </StackPanel>
                                     <StackPanel Margin="5,0,0,0" Orientation="Horizontal">
-                                        <TextBlock Margin="5,0" VerticalAlignment="Center" Text="Y:" />
+                                        <TextBlock Margin="5,0" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource ToggleBtnForeground}"
+                                                   Text="Y:" />
                                         <TextBox x:Name="Part_DragY" MinWidth="40" Padding="0,2"
                                                  VerticalAlignment="Center"
+                                                 Background="{DynamicResource ToolBar_Background}"
+                                                 Foreground="{DynamicResource ToggleBtnForeground}"
                                                  Text="{Binding DragY, RelativeSource={RelativeSource AncestorType=local:OscillogramCharting}, UpdateSourceTrigger=PropertyChanged}">
                                             <TextBox.Style>
                                                 <Style TargetType="TextBox">
